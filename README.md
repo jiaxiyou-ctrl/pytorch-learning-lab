@@ -1,4 +1,4 @@
-# 🧪 PyTorch Learning Lab
+#  PyTorch Learning Lab
 
 A hands-on collection of PyTorch projects documenting my journey from beginner to practitioner.  
 Each project focuses on a core concept — from classical reinforcement learning to the Transformer architecture.
