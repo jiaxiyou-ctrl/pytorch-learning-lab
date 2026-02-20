@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import LinearLR
 import gymnasium as gym
 
 from networks import PolicyNetwork, ValueNetwork
@@ -33,7 +34,7 @@ def parse_args() -> argparse.Namespace:
                         help="Environment steps collected per iteration.")
     parser.add_argument("--policy_lr", type=float, default=3e-4,
                         help="Learning rate for the policy network.")
-    parser.add_argument("--value_lr", type=float, default=1e-3,
+    parser.add_argument("--value_lr", type=float, default=3e-4,
                         help="Learning rate for the value network.")
     parser.add_argument("--gamma", type=float, default=0.99,
                         help="Discount factor.")
@@ -41,7 +42,7 @@ def parse_args() -> argparse.Namespace:
                         help="GAE lambda.")
     parser.add_argument("--clip_epsilon", type=float, default=0.2,
                         help="PPO-Clip epsilon.")
-    parser.add_argument("--update_epochs", type=int, default=10,
+    parser.add_argument("--update_epochs", type=int, default=4,
                         help="Number of update epochs per iteration.")
     parser.add_argument("--mini_batch_size", type=int, default=64,
                         help="Mini-batch size for PPO updates.")
@@ -51,36 +52,61 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def save_reward_curve(reward_history: list, save_path: str) -> None:
+def save_reward_curve(
+    avg_reward_history: list,
+    total_reward_history: list,
+    save_path: str,
+) -> None:
     """Plot and save the training reward curve.
 
-    Shows raw per-iteration rewards and a 10-iteration moving average.
+    Produces a two-panel figure:
+    - Top panel: per-step average reward with 10-iteration smoothed trend.
+    - Bottom panel: total episode reward per iteration (sum over steps_per_iter steps).
 
     Args:
-        reward_history: List of average per-step rewards per iteration.
-        save_path:      File path for the output PNG.
+        avg_reward_history:   Average per-step reward per iteration.
+        total_reward_history: Total reward summed over all steps per iteration.
+        save_path:            File path for the output PNG.
     """
     window = 10
-    plt.figure(figsize=(10, 5))
-    plt.plot(reward_history, alpha=0.4, color="steelblue", label="Raw Reward")
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-    if len(reward_history) >= window:
+    # --- Top panel: per-step average reward ---
+    ax1.plot(avg_reward_history, alpha=0.4, color="steelblue", label="Raw Reward")
+    if len(avg_reward_history) >= window:
         smoothed = np.convolve(
-            reward_history, np.ones(window) / window, mode="valid"
+            avg_reward_history, np.ones(window) / window, mode="valid"
         )
-        plt.plot(
-            range(window - 1, len(reward_history)),
+        ax1.plot(
+            range(window - 1, len(avg_reward_history)),
             smoothed,
             color="crimson",
             linewidth=2,
             label=f"Smoothed ({window}-iter avg)",
         )
+    ax1.set_ylabel("Avg Reward per Step")
+    ax1.set_title("PPO Training on Reacher-v5")
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
 
-    plt.xlabel("Training Iteration")
-    plt.ylabel("Average Reward per Step")
-    plt.title("PPO Training on Reacher-v5")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    # --- Bottom panel: total reward per iteration ---
+    ax2.plot(total_reward_history, alpha=0.4, color="darkorange", label="Total Reward")
+    if len(total_reward_history) >= window:
+        smoothed_total = np.convolve(
+            total_reward_history, np.ones(window) / window, mode="valid"
+        )
+        ax2.plot(
+            range(window - 1, len(total_reward_history)),
+            smoothed_total,
+            color="darkgreen",
+            linewidth=2,
+            label=f"Smoothed ({window}-iter avg)",
+        )
+    ax2.set_xlabel("Training Iteration")
+    ax2.set_ylabel("Total Reward (sum over steps)")
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close()
@@ -101,6 +127,17 @@ def main() -> None:
     policy_optimizer = optim.Adam(policy.parameters(), lr=args.policy_lr)
     value_optimizer = optim.Adam(value_net.parameters(), lr=args.value_lr)
 
+    # Linearly anneal both learning rates to 10 % of their starting value
+    # by the final iteration, giving aggressive early updates and fine-tuning later.
+    policy_scheduler = LinearLR(
+        policy_optimizer, start_factor=1.0, end_factor=0.1,
+        total_iters=args.num_iterations,
+    )
+    value_scheduler = LinearLR(
+        value_optimizer, start_factor=1.0, end_factor=0.1,
+        total_iters=args.num_iterations,
+    )
+
     print("=" * 60)
     print("PPO Training — Reacher-v5")
     print("=" * 60)
@@ -113,7 +150,8 @@ def main() -> None:
     print(f"  Clip epsilon : {args.clip_epsilon}")
     print("=" * 60)
 
-    reward_history = []
+    avg_reward_history = []
+    total_reward_history = []
 
     for iteration in range(args.num_iterations):
         # --- Rollout ---
@@ -146,15 +184,22 @@ def main() -> None:
         )
 
         avg_reward = float(np.mean(experience["rewards"]))
-        reward_history.append(avg_reward)
+        total_reward = float(np.sum(experience["rewards"]))
+        avg_reward_history.append(avg_reward)
+        total_reward_history.append(total_reward)
+
+        policy_scheduler.step()
+        value_scheduler.step()
 
         if (iteration + 1) % 10 == 0:
-            recent_avg = float(np.mean(reward_history[-10:]))
-            std_values = policy.log_std.exp().detach().numpy()
+            recent_avg = float(np.mean(avg_reward_history[-10:]))
+            log_std_clamped = torch.clamp(policy.log_std, min=-2.0, max=0.0)
+            std_values = log_std_clamped.exp().detach().numpy()
             print(
                 f"Iteration {iteration + 1:3d}/{args.num_iterations} | "
-                f"Avg Reward: {recent_avg:.4f} | "
-                f"Policy Loss: {avg_p_loss:.4f} | "
+                f"Reward: {recent_avg:.4f} | "
+                f"P_Loss: {avg_p_loss:.4f} | "
+                f"V_Loss: {avg_v_loss:.4f} | "
                 f"Std: [{std_values[0]:.3f}, {std_values[1]:.3f}]"
             )
 
@@ -174,7 +219,7 @@ def main() -> None:
 
     # --- Save reward curve ---
     curve_path = os.path.join(args.save_dir, "training_reward_curve.png")
-    save_reward_curve(reward_history, curve_path)
+    save_reward_curve(avg_reward_history, total_reward_history, curve_path)
 
     print()
     print(f"Training complete. Model saved to {model_path}")

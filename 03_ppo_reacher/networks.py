@@ -35,7 +35,8 @@ class PolicyNetwork(nn.Module):
 
         # log_std is a learnable parameter, not input-dependent.
         # Parameterising in log-space ensures std > 0 after exp().
-        self.log_std = nn.Parameter(torch.zeros(act_dim))
+        # Initialise at -0.5 so starting std ≈ 0.6 (avoids early over-exploration).
+        self.log_std = nn.Parameter(torch.full((act_dim,), -0.5))
 
     def forward(self, obs: torch.Tensor):
         """Compute the distribution parameters for the given observations.
@@ -49,7 +50,11 @@ class PolicyNetwork(nn.Module):
         """
         features = self.shared_net(obs)
         mean = self.mean_head(features)
-        std = self.log_std.exp()
+        # Clamp log_std to prevent std from collapsing or exploding.
+        # Range [-2, 0] corresponds to std in [~0.14, 1.0] — tighter upper bound
+        # stops the policy from staying too stochastic and destabilising training.
+        log_std_clamped = torch.clamp(self.log_std, min=-2.0, max=0.0)
+        std = log_std_clamped.exp()
         return mean, std
 
     def get_action(self, obs: torch.Tensor):

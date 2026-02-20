@@ -126,16 +126,12 @@ def compute_advantages(
     values_extended = values + [last_value]
 
     for t in reversed(range(len(rewards))):
-        if dones[t]:
-            delta = rewards[t] - values_extended[t]
-            gae = delta
-        else:
-            delta = rewards[t] + gamma * values_extended[t + 1] - values_extended[t]
-            gae = delta + gamma * lam * gae
-
+        mask = 1.0 - float(dones[t])
+        delta = rewards[t] + gamma * values_extended[t + 1] * mask - values_extended[t]
+        gae = delta + gamma * lam * mask * gae
         advantages.insert(0, gae)
 
-    returns = [adv + val for adv, val in zip(advantages, values_extended[:-1])]
+    returns = [adv + val for adv, val in zip(advantages, values)]
     return advantages, returns
 
 
@@ -161,8 +157,9 @@ def ppo_update(
     An entropy bonus (coefficient 0.01) is subtracted from the policy
     loss to encourage exploration.
 
-    Value loss:
-        L_VF = E[ (V(s_t) - R_t)^2 ]
+    Value loss (clipped MSE, returns normalised before regression):
+        L_VF = 0.5 * E[ max((V(s_t) - R_t)^2,
+                            (clip(V(s_t), V_old - eps, V_old + eps) - R_t)^2) ]
 
     Args:
         policy:            Actor network.
@@ -182,11 +179,18 @@ def ppo_update(
     obs_tensor = torch.FloatTensor(np.array(batch["obs"]))
     act_tensor = torch.FloatTensor(np.array(batch["actions"]))
     old_log_prob_tensor = torch.FloatTensor(np.array(batch["log_probs"]))
+    old_values_tensor = torch.FloatTensor(np.array(batch["values"]))
     adv_tensor = torch.FloatTensor(np.array(batch["advantages"]))
     ret_tensor = torch.FloatTensor(np.array(batch["returns"]))
 
     # Normalize advantages to zero mean and unit variance.
     adv_tensor = (adv_tensor - adv_tensor.mean()) / (adv_tensor.std() + 1e-8)
+
+    # Normalize returns so the value network regresses a well-scaled target,
+    # which prevents the value loss from exploding when rewards are large or sparse.
+    returns_mean = ret_tensor.mean()
+    returns_std = ret_tensor.std() + 1e-8
+    ret_tensor_normalized = (ret_tensor - returns_mean) / returns_std
 
     total_policy_loss = 0.0
     total_value_loss = 0.0
@@ -202,8 +206,9 @@ def ppo_update(
             b_obs = obs_tensor[batch_idx]
             b_act = act_tensor[batch_idx]
             b_old_log_prob = old_log_prob_tensor[batch_idx]
+            b_old_val = old_values_tensor[batch_idx]
             b_adv = adv_tensor[batch_idx]
-            b_ret = ret_tensor[batch_idx]
+            b_ret = ret_tensor_normalized[batch_idx]
 
             # --- Policy update (PPO-Clip) ---
             new_log_prob, entropy = policy.evaluate_action(b_obs, b_act)
@@ -216,14 +221,26 @@ def ppo_update(
 
             policy_optimizer.zero_grad()
             policy_loss.backward()
+            torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=0.5)
             policy_optimizer.step()
 
-            # --- Value update (MSE regression) ---
+            # --- Value update (clipped MSE regression) ---
+            # Normalise old values to the same scale as the normalised return target
+            # so the clip range is meaningful across different reward magnitudes.
+            b_old_val_normalized = (b_old_val - returns_mean) / returns_std
             value_pred = value_net(b_obs)
-            value_loss = (value_pred - b_ret).pow(2).mean()
+            value_pred_clipped = b_old_val_normalized + torch.clamp(
+                value_pred - b_old_val_normalized, -clip_epsilon, clip_epsilon
+            )
+            value_loss_unclipped = (value_pred - b_ret).pow(2)
+            value_loss_clipped = (value_pred_clipped - b_ret).pow(2)
+            # Take the pessimistic (max) loss to prevent the value from moving
+            # too far from the old prediction in a single update.
+            value_loss = 0.5 * torch.max(value_loss_unclipped, value_loss_clipped).mean()
 
             value_optimizer.zero_grad()
             value_loss.backward()
+            torch.nn.utils.clip_grad_norm_(value_net.parameters(), max_norm=0.5)
             value_optimizer.step()
 
             total_policy_loss += policy_loss.item()
