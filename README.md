@@ -9,6 +9,7 @@ Each project focuses on a core concept — from classical reinforcement learning
 
 - [Project 1: Q-Learning Maze Solver](#-project-1-q-learning-maze-solver)
 - [Project 2: Transformer Basics](#-project-2-transformer-basics)
+- [Project 3: PPO Reacher Agent](#-project-3-ppo-reacher-agent)
 - [Project Structure](#%EF%B8%8F-project-structure)
 - [Setup & Installation](#%EF%B8%8F-setup--installation)
 - [References](#-references)
@@ -36,6 +37,17 @@ pytorch-learning-lab/
 │   ├── transformer_block.py  # SimpleSelfAttention + TransformerBlock
 │   ├── sentiment_analysis.py # Sentiment analysis with Hugging Face
 │   └── text_generation.py    # Text generation with GPT-2
+│
+├── 03_ppo_reacher/
+│   ├── networks.py      # PolicyNetwork (actor) and ValueNetwork (critic)
+│   ├── ppo.py           # PPO algorithm: rollout, GAE, PPO-Clip update
+│   ├── train.py         # Training loop with argparse and result saving
+│   ├── evaluate.py      # Model evaluation and GIF recording
+│   ├── explore_env.py   # Environment exploration and reward analysis
+│   └── results/
+│       ├── trained_model.pth
+│       ├── training_reward_curve.png
+│       └── trained_agent.gif
 │
 └── assets/
 ```
@@ -130,6 +142,44 @@ python text_generation.py
 
 ---
 
+## 🤖 Project 3: PPO Reacher Agent
+
+### Overview
+
+A PPO agent trained from scratch using PyTorch to control a 2-DOF robotic arm in the MuJoCo Reacher-v5 environment. The agent learns to coordinate two joint torques to move its fingertip to a randomly placed target.
+
+### Key Concepts
+
+| Concept | Description |
+|---|---|
+| **Proximal Policy Optimization (PPO-Clip)** | Clipped surrogate objective for stable on-policy updates |
+| **Generalized Advantage Estimation (GAE)** | Bias–variance trade-off in advantage computation |
+| **Continuous action space** | Gaussian policy over joint torques |
+| **Actor-Critic architecture** | Separate policy and value networks |
+
+### Results
+
+| Training Reward Curve | Trained Agent Demo |
+|:---:|:---:|
+| ![Reward Curve](03_ppo_reacher/results/training_reward_curve.png) | ![Agent GIF](03_ppo_reacher/results/trained_agent.gif) |
+
+### How to Run
+
+```bash
+cd 03_ppo_reacher
+
+# Explore the environment
+python explore_env.py
+
+# Train the agent
+python train.py --num_iterations 200 --steps_per_iter 2048
+
+# Evaluate and save a GIF
+python evaluate.py --model_path results/trained_model.pth --save_gif
+```
+
+---
+
 ## 🛠️ Setup & Installation
 
 **Prerequisites:** Python 3.9+
@@ -151,8 +201,11 @@ pip install -r requirements.txt
 
 - Sutton & Barto — [*Reinforcement Learning: An Introduction*](http://incompleteideas.net/book/the-book-2nd.html) (2018)
 - Vaswani et al. — [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762) (2017)
+- Schulman et al. — [*Proximal Policy Optimization Algorithms*](https://arxiv.org/abs/1707.06347) (2017)
+- Schulman et al. — [*High-Dimensional Continuous Control Using Generalized Advantage Estimation*](https://arxiv.org/abs/1506.02438) (2016)
 - [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers/index)
 - [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
+- [Gymnasium Reacher-v5 Documentation](https://gymnasium.farama.org/environments/mujoco/reacher/)
 
 ---
 
