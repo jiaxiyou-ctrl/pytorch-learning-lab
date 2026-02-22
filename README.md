@@ -10,6 +10,7 @@ Each project focuses on a core concept — from classical reinforcement learning
 - [Project 1: Q-Learning Maze Solver](#-project-1-q-learning-maze-solver)
 - [Project 2: Transformer Basics](#-project-2-transformer-basics)
 - [Project 3: PPO Reacher Agent](#-project-3-ppo-reacher-agent)
+- [Project 4: RAG Assistant](#-project-4-rag-assistant)
 - [Project Structure](#%EF%B8%8F-project-structure)
 - [Setup & Installation](#%EF%B8%8F-setup--installation)
 - [References](#-references)
@@ -48,6 +49,18 @@ pytorch-learning-lab/
 │       ├── trained_model.pth
 │       ├── training_reward_curve.png
 │       └── trained_agent.gif
+│
+├── 04rag-assistant/
+│   ├── main.py          # Entry point - run full RAG pipeline
+│   ├── README.md
+│   ├── data/
+│   │   └── sample.txt   # Zombie survival guide (knowledge base)
+│   └── src/
+│       ├── step1_load.py      # Document loading
+│       ├── step2_split.py     # Text splitting
+│       ├── step3_embed.py     # Embedding & vector storage
+│       ├── step4_retrieve.py  # Similarity search retrieval
+│       └── step5_generate.py  # LLM answer generation
 │
 └── assets/
 ```
@@ -180,6 +193,75 @@ python evaluate.py --model_path results/trained_model.pth --save_gif
 
 ---
 
+## 🧟 Project 4: RAG Assistant
+
+### Overview
+
+A Retrieval-Augmented Generation (RAG) system built from scratch using LangChain. It reads a zombie survival guide, splits it into chunks, embeds them into a vector database, and uses a local LLM (TinyLlama-1.1B) to answer questions based on retrieved context - all running locally without any API keys.
+
+### Key Concepts
+
+| Concept | Description |
+|---|---|
+| **Retrieval-Augmented Generation (RAG)** | Combine document retrieval with LLM generation for grounded answers |
+| **Text Embeddings** | Convert text into numerical vectors that capture semantic meaning |
+| **Vector Store (ChromaDB)** | Database that enables fast similarity search over embedded documents |
+| **Prompt Engineering** | Structured instructions that guide LLM output quality and format |
+| **Local LLM Inference** | Run a language model (TinyLlama-1.1B) entirely on-device without API calls |
+
+### Architecture
+
+```
+Document ---> Split ---> Embed ---> Store (ChromaDB)
+                     |
+User Query ---> Embed ---> Similarity Search ---> Retrieve Top-K Chunks
+                     |
+Prompt + Context ---> LLM ---> Answer
+```
+
+### Sample Output
+
+```text
+=== RAG Assistant: Zombie Survival Guide ===
+📥 Loading documents...
+✅ 1 document loaded
+✂️ Splitting into chunks...
+✅ 20 chunks created
+🧠 Creating vector store...
+✅ 20 vectors stored
+🤖 Loading LLM...
+✅ TinyLlama ready
+
+--- Query 1/4 ---
+Q: What is the best weapon for close combat?
+A: The best weapon for close combat is a sturdy crowbar. It is quiet, nearly unbreakable, and provides excellent balance and control for striking and prying.
+
+--- Query 2/4 ---
+Q: How do I purify water?
+A: Purify by boiling for at least one full minute, filtering through a proper field filter, or using purification tablets exactly as directed.
+
+✅ Done! Total execution time: 51.8s
+```
+
+### How to Run
+
+```bash
+# Create and activate conda environment
+conda create -n rag_env python=3.11
+conda activate rag_env
+
+# Install dependencies
+pip install langchain langchain-community langchain-core langchain-text-splitters \
+  langchain-huggingface chromadb sentence-transformers transformers torch accelerate pypdf
+
+# Run the full pipeline
+python 04rag-assistant/main.py
+```
+
+> **Note:** First run downloads TinyLlama (~2 GB) and the embedding model (~90 MB). Subsequent runs use cached models.
+
+---
+
 ## 🛠️ Setup & Installation
 
 **Prerequisites:** Python 3.9+
@@ -203,7 +285,11 @@ pip install -r requirements.txt
 - Vaswani et al. — [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762) (2017)
 - Schulman et al. — [*Proximal Policy Optimization Algorithms*](https://arxiv.org/abs/1707.06347) (2017)
 - Schulman et al. — [*High-Dimensional Continuous Control Using Generalized Advantage Estimation*](https://arxiv.org/abs/1506.02438) (2016)
+- Lewis et al. — [*Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*](https://arxiv.org/abs/2005.11401) (2020)
 - [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers/index)
+- [LangChain Documentation](https://python.langchain.com/docs/introduction/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
+- [Hugging Face sentence-transformers](https://www.sbert.net/)
 - [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
 - [Gymnasium Reacher-v5 Documentation](https://gymnasium.farama.org/environments/mujoco/reacher/)
 
