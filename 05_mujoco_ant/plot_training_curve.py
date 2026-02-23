@@ -1,0 +1,161 @@
+"""Plot training reward curve from a training log file.
+
+Usage:
+    python plot_training_curve.py
+    python plot_training_curve.py --log training_log.txt --output results/curve.png
+"""
+
+import argparse
+import os
+import re
+from typing import List, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def parse_log(log_path: str) -> Tuple[List[int], List[float]]:
+    """Extract ``(step, mean_reward)`` pairs from the training log.
+
+    Expects log lines in the format produced by ``train.py``::
+
+        Update  285/2441 | Step  583,680 | ... | Mean reward   8.5 | ...
+
+    Args:
+        log_path: Path to the training log text file.
+
+    Returns:
+        Tuple of ``(steps, rewards)`` lists.
+    """
+    steps: List[int] = []
+    rewards: List[float] = []
+
+    with open(log_path, "r") as f:
+        for line in f:
+            match = re.search(
+                r"Step\s+([\d,]+)\s+.*Mean reward\s+([-\d.]+)", line
+            )
+            if match:
+                steps.append(int(match.group(1).replace(",", "")))
+                rewards.append(float(match.group(2)))
+
+    return steps, rewards
+
+
+def smooth(values: List[float], weight: float = 0.9) -> List[float]:
+    """Apply exponential moving average smoothing.
+
+    Args:
+        values: Raw reward values.
+        weight: Smoothing factor (0 = no smoothing, 1 = flat line).
+
+    Returns:
+        Smoothed values (same length as input).
+    """
+    smoothed: List[float] = []
+    last = values[0]
+    for v in values:
+        last = weight * last + (1 - weight) * v
+        smoothed.append(last)
+    return smoothed
+
+
+def plot(
+    steps: List[int],
+    rewards: List[float],
+    save_path: str = "results/training_reward_curve.png",
+) -> None:
+    """Create and save the training reward curve plot.
+
+    Args:
+        steps:     Global step numbers.
+        rewards:   Corresponding mean episode rewards.
+        save_path: File path to save the figure.
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    ax.plot(
+        steps, rewards,
+        color="#2196F3", alpha=0.2, linewidth=0.8,
+        label="Raw",
+    )
+
+    smoothed = smooth(rewards, weight=0.9)
+    ax.plot(
+        steps, smoothed,
+        color="#2196F3", linewidth=2.5,
+        label="Smoothed (EMA 0.9)",
+    )
+
+    ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
+
+    best_idx = int(np.argmax(rewards))
+    ax.scatter(
+        steps[best_idx], rewards[best_idx],
+        color="#FF5722", s=80, zorder=5,
+        label=f"Best: {rewards[best_idx]:+.1f} (step {steps[best_idx]:,})",
+    )
+
+    for i in range(1, len(rewards)):
+        if smoothed[i - 1] < 0 and smoothed[i] >= 0:
+            ax.axvline(
+                x=steps[i], color="#4CAF50",
+                linestyle=":", linewidth=1.5, alpha=0.7,
+            )
+            ax.annotate(
+                f"Zero crossing\nstep {steps[i]:,}",
+                xy=(steps[i], 0),
+                xytext=(steps[i] + 200_000, -100),
+                fontsize=9,
+                arrowprops=dict(arrowstyle="->", color="#4CAF50"),
+                color="#4CAF50",
+            )
+            break
+
+    ax.set_xlabel("Training Steps", fontsize=12)
+    ax.set_ylabel("Mean Episode Reward", fontsize=12)
+    ax.set_title(
+        "PPO Training on Ant-v5 (MuJoCo)\n"
+        "Obs Normalization + Reward Normalization + LR Annealing",
+        fontsize=14, fontweight="bold",
+    )
+    ax.legend(loc="upper left", fontsize=10)
+    ax.grid(True, alpha=0.3)
+
+    ax.xaxis.set_major_formatter(
+        plt.FuncFormatter(lambda x, _: f"{x / 1e6:.1f}M")
+    )
+
+    plt.tight_layout()
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    print(f"Training curve saved to {save_path}")
+    plt.show()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Plot training reward curve from log file."
+    )
+    parser.add_argument(
+        "--log", default="training_log.txt",
+        help="Path to training log file",
+    )
+    parser.add_argument(
+        "--output", default="results/training_reward_curve.png",
+        help="Path to save the plot",
+    )
+    args = parser.parse_args()
+
+    steps, rewards = parse_log(args.log)
+
+    if len(steps) == 0:
+        print(f"No data found in {args.log}")
+        print("Make sure the log contains lines like:")
+        print("  Update  5/2441 | Step  10,240 | ... | Mean reward  -127.6 | ...")
+    else:
+        print(f"Found {len(steps)} data points")
+        print(f"  Steps: {steps[0]:,} -> {steps[-1]:,}")
+        print(f"  Reward: {min(rewards):.1f} -> {max(rewards):.1f}")
+        plot(steps, rewards, save_path=args.output)

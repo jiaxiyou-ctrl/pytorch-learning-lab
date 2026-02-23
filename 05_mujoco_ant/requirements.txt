@@ -1,0 +1,14 @@
+# Physics simulation
+mujoco>=3.0.0
+gymnasium[mujoco]>=1.0.0
+
+# Deep learning
+torch>=2.0.0
+
+# Utilities
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# Video recording
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8

@@ -1,0 +1,4 @@
+checkpoints/
+videos/
+__pycache__/
+*.pyc
