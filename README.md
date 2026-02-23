@@ -11,6 +11,7 @@ Each project focuses on a core concept — from classical reinforcement learning
 - [Project 2: Transformer Basics](#-project-2-transformer-basics)
 - [Project 3: PPO Reacher Agent](#-project-3-ppo-reacher-agent)
 - [Project 4: RAG Assistant](#-project-4-rag-assistant)
+- [Project 5: PPO Ant Walker (MuJoCo)](#-project-5-ppo-ant-walker-mujoco)
 - [Project Structure](#%EF%B8%8F-project-structure)
 - [Setup & Installation](#%EF%B8%8F-setup--installation)
 - [References](#-references)
@@ -27,40 +28,55 @@ pytorch-learning-lab/
 ├── .gitignore
 │
 ├── 01_q_learning_maze/
-│   ├── maze_env.py          # SimpleMaze environment (4×4 grid world)
-│   ├── q_learning_agent.py  # Tabular Q-Learning agent
-│   ├── train.py             # Training loop + reward curve + agent GIF
+│   ├── maze_env.py              # SimpleMaze environment (4×4 grid world)
+│   ├── q_learning_agent.py      # Tabular Q-Learning agent
+│   ├── train.py                 # Training loop + reward curve + agent GIF
 │   └── results/
 │       ├── training_reward_curve.png
 │       └── maze_agent.gif
 │
 ├── 02_transformer_basics/
-│   ├── transformer_block.py  # SimpleSelfAttention + TransformerBlock
-│   ├── sentiment_analysis.py # Sentiment analysis with Hugging Face
-│   └── text_generation.py    # Text generation with GPT-2
+│   ├── transformer_block.py      # SimpleSelfAttention + TransformerBlock
+│   ├── sentiment_analysis.py     # Sentiment analysis with Hugging Face
+│   └── text_generation.py        # Text generation with GPT-2
 │
 ├── 03_ppo_reacher/
-│   ├── networks.py      # PolicyNetwork (actor) and ValueNetwork (critic)
-│   ├── ppo.py           # PPO algorithm: rollout, GAE, PPO-Clip update
-│   ├── train.py         # Training loop with argparse and result saving
-│   ├── evaluate.py      # Model evaluation and GIF recording
-│   ├── explore_env.py   # Environment exploration and reward analysis
+│   ├── networks.py             # PolicyNetwork (actor) and ValueNetwork (critic)
+│   ├── ppo.py                  # PPO algorithm: rollout, GAE, PPO-Clip update
+│   ├── train.py                # Training loop with argparse and result saving
+│   ├── evaluate.py             # Model evaluation and GIF recording
+│   ├── explore_env.py          # Environment exploration and reward analysis
 │   └── results/
 │       ├── trained_model.pth
 │       ├── training_reward_curve.png
 │       └── trained_agent.gif
 │
 ├── 04rag-assistant/
-│   ├── main.py          # Entry point - run full RAG pipeline
+│   ├── main.py                # Entry point - run full RAG pipeline
 │   ├── README.md
 │   ├── data/
-│   │   └── sample.txt   # Zombie survival guide (knowledge base)
+│   │   └── sample.txt         # Zombie survival guide (knowledge base)
 │   └── src/
 │       ├── step1_load.py      # Document loading
 │       ├── step2_split.py     # Text splitting
 │       ├── step3_embed.py     # Embedding & vector storage
 │       ├── step4_retrieve.py  # Similarity search retrieval
 │       └── step5_generate.py  # LLM answer generation
+│
+├── 05_mujoco_ant/
+│   ├── networks.py            # ActorCritic network (actor + critic heads)
+│   ├── ppo_buffer.py          # PPO rollout buffer with GAE
+│   ├── ppo_agent.py           # PPO agent (select_action, update)
+│   ├── obs_normalizer.py      # Running observation normalizer (Welford)
+│   ├── reward_normalizer.py   # Running reward normalizer
+│   ├── domain_random.py       # Domain randomization for sim-to-real
+│   ├── train.py               # Training loop with checkpoint & resume
+│   ├── record.py              # Record trained agent as MP4 video
+│   ├── plot_training_curve.py # Plot training reward curve from log
+│   ├── training_log.txt       # Training output log
+│   └── results/
+│       ├── training_reward_curve.png
+│       └── ant_walking.gif
 │
 └── assets/
 ```
@@ -262,6 +278,51 @@ python 04rag-assistant/main.py
 
 ---
 
+## 🐜 Project 5: PPO Ant Walker (MuJoCo)
+
+### Overview
+
+A PPO agent trained from scratch to control a quadruped ant (Ant-v5) in MuJoCo. The agent learns to coordinate 8 joint torques to walk forward, achieving a peak reward of +632 after 5M steps of training. Includes observation normalization, reward normalization, learning rate annealing, and domain randomization for sim-to-real transfer.
+
+### Key Concepts
+
+| Concept | Description |
+|---|---|
+| **Proximal Policy Optimization (PPO-Clip)** | Clipped surrogate objective for stable on-policy updates |
+| **Actor-Critic Architecture** | Shared observation space with separate actor and critic heads |
+| **Generalized Advantage Estimation (GAE)** | Bias–variance trade-off in advantage computation |
+| **Observation Normalization** | Welford's online algorithm for running mean/variance of 105-dim observations |
+| **Reward Normalization** | Running variance scaling to prevent large penalties from dominating learning |
+| **Learning Rate Annealing** | Linear decay from 3e-4 to 0 for stable late-stage training |
+| **Domain Randomization** | Randomize gravity, friction, and body mass for sim-to-real transfer |
+| **Checkpoint & Resume** | Save/load full training state (network, optimizer, normalizers, progress) |
+
+### Results
+
+| Training Reward Curve | Trained Agent Demo |
+|:---:|:---:|
+| ![Reward Curve](05_mujoco_ant/results/training_reward_curve.png) | ![Agent GIF](05_mujoco_ant/results/ant_walking.gif) |
+
+### How to Run
+
+```bash
+cd 05_mujoco_ant
+
+# Train the agent (5M steps, ~38 min)
+python train.py --timesteps 5000000
+
+# Resume from checkpoint
+python train.py --timesteps 5000000 --resume checkpoints/ant_ppo_final.pt
+
+# Record the trained agent
+python record.py --checkpoint checkpoints/ant_ppo_4096000.pt --episodes 1
+
+# Plot training curve
+python plot_training_curve.py --log training_log.txt
+```
+
+---
+
 ## 🛠️ Setup & Installation
 
 **Prerequisites:** Python 3.9+
@@ -285,13 +346,16 @@ pip install -r requirements.txt
 - Vaswani et al. — [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762) (2017)
 - Schulman et al. — [*Proximal Policy Optimization Algorithms*](https://arxiv.org/abs/1707.06347) (2017)
 - Schulman et al. — [*High-Dimensional Continuous Control Using Generalized Advantage Estimation*](https://arxiv.org/abs/1506.02438) (2016)
+- Tobin et al. — [*Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World*](https://arxiv.org/abs/1703.06907) (2017)
 - Lewis et al. — [*Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*](https://arxiv.org/abs/2005.11401) (2020)
 - [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers/index)
 - [LangChain Documentation](https://python.langchain.com/docs/introduction/)
 - [ChromaDB Documentation](https://docs.trychroma.com/)
 - [Hugging Face sentence-transformers](https://www.sbert.net/)
 - [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
+- [MuJoCo Documentation](https://mujoco.readthedocs.io/)
 - [Gymnasium Reacher-v5 Documentation](https://gymnasium.farama.org/environments/mujoco/reacher/)
+- [Gymnasium Ant-v5 Documentation](https://gymnasium.farama.org/environments/mujoco/ant/)
 
 ---
 

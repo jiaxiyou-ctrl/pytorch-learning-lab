@@ -12,9 +12,5 @@ venv/
 *.pth
 wandb/
 .ipynb_checkpoints/
-
-# Vector database (regenerated at runtime)
 **/chroma_db/
-
-# Model cache
 .cache/

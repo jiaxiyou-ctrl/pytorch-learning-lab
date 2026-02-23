@@ -75,21 +75,20 @@ Key techniques beyond vanilla PPO include running observation normalization (Wel
 
 ```
 05_mujoco_ant/
-├── networks.py             # ActorCritic network (separate actor/critic trunks)
+├── networks.py             # ActorCritic network (actor + critic heads)
 ├── ppo_buffer.py           # PPO rollout buffer with GAE computation
 ├── ppo_agent.py            # PPO agent (select_action, update)
-├── obs_normalizer.py       # Running observation normalizer (Welford algorithm)
+├── obs_normalizer.py       # Running observation normalizer (Welford)
 ├── reward_normalizer.py    # Running reward normalizer
-├── domain_random.py        # Domain randomization for sim-to-real transfer
-├── train.py                # Training loop with checkpointing and resume support
+├── domain_random.py        # Domain randomization for sim-to-real
+├── train.py                # Training loop with checkpoint & resume
 ├── record.py               # Record trained agent as MP4 video
 ├── plot_training_curve.py  # Plot training reward curve from log
-├── explore_env.py          # Environment exploration (random agent)
-├── test_domain_random.py   # Domain randomization smoke test
-├── training_log.txt        # Training log output
-├── requirements.txt        # Python dependencies
+├── training_log.txt        # Training output log
+├── README.md               # Project documentation
 ├── results/
-│   └── training_reward_curve.png
+│   ├── training_reward_curve.png
+│   └── ant_walking.gif
 ├── checkpoints/            # (gitignored) saved model checkpoints
 └── videos/                 # (gitignored) recorded videos
 ```
