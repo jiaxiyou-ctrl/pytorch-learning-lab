@@ -74,21 +74,21 @@ python 04rag-assistant/main.py
   🧟 RAG Assistant: Zombie Survival Guide
 ============================================================
 
-📥 Loading documents...
-✅ Document loaded successfully!
-📄 Number of documents: 1
+1. Loading documents...
+  Document loaded successfully!
+  Number of documents: 1
 
-✂️  Splitting into chunks...
-✅ Documents split successfully!
-📦 1 document(s) split into 6 chunks
+2.  Splitting into chunks...
+  Documents split successfully!
+  1 document(s) split into 6 chunks
 
-🧠 Creating vector store...
-✅ Vector database created successfully!
-📊 Stored 6 vectors
+3. Creating vector store...
+  Vector database created successfully!
+  Stored 6 vectors
 
-🤖 Loading LLM...
-⏳ Loading model: TinyLlama/TinyLlama-1.1B-Chat-v1.0...
-✅ Model loaded successfully!
+4. Loading LLM...
+  Loading model: TinyLlama/TinyLlama-1.1B-Chat-v1.0...
+  Model loaded successfully!
 
 ────────────────────────────────────────────────────────────
 --- Query 1/4 ---
