@@ -1,17 +1,4 @@
-"""
-transformer_block.py
---------------------
-Minimal PyTorch implementations of the core Transformer building blocks:
-
-  - SimpleSelfAttention : scaled dot-product self-attention (from scratch)
-  - TransformerBlock    : full encoder block (attention + FFN + residual + LayerNorm)
-
-These implementations prioritise readability over production performance.
-For real workloads use torch.nn.MultiheadAttention or a library like
-Hugging Face Transformers.
-
-Reference: Vaswani et al., "Attention Is All You Need" (2017).
-"""
+"""From-scratch self-attention and transformer encoder block in PyTorch."""
 
 import math
 import torch
@@ -20,17 +7,10 @@ import torch.nn.functional as F
 
 
 class SimpleSelfAttention(nn.Module):
-    """
-    Scaled dot-product self-attention implemented from scratch.
+    """Scaled dot-product self-attention.
 
-    Given an input sequence X of shape (batch, seq_len, embed_dim), the
-    attention mechanism computes:
-
-        Q = X W_Q,  K = X W_K,  V = X W_V
-        Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V
-
-    Args:
-        embed_dim (int): Dimensionality of input embeddings (d_model = d_k = d_v).
+    Q = XW_Q, K = XW_K, V = XW_V
+    Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) V
     """
 
     def __init__(self, embed_dim):
@@ -41,18 +21,11 @@ class SimpleSelfAttention(nn.Module):
         self.W_value = nn.Linear(embed_dim, embed_dim)
 
     def forward(self, x):
-        """
-        Args:
-            x (Tensor): Shape (batch, seq_len, embed_dim).
-
-        Returns:
-            Tensor: Attention output, same shape as x.
-        """
+        """x: (batch, seq_len, embed_dim) -> same shape."""
         Q = self.W_query(x)                           # (B, T, D)
         K = self.W_key(x)                             # (B, T, D)
         V = self.W_value(x)                           # (B, T, D)
 
-        # Scaled dot-product attention scores
         scale = math.sqrt(self.embed_dim)
         scores = torch.matmul(Q, K.transpose(-2, -1)) / scale   # (B, T, T)
 
@@ -62,19 +35,7 @@ class SimpleSelfAttention(nn.Module):
 
 
 class TransformerBlock(nn.Module):
-    """
-    A single Transformer encoder block.
-
-    Architecture (Pre-LN variant for training stability):
-        x → MultiheadAttention → Dropout → Residual → LayerNorm
-          → FeedForward        → Dropout → Residual → LayerNorm
-
-    Args:
-        embed_dim  (int)  : Dimensionality of token embeddings.
-        num_heads  (int)  : Number of parallel attention heads.
-        ff_dim     (int)  : Hidden dimension of the feed-forward network.
-        dropout    (float): Dropout probability (default 0.1).
-    """
+    """Single transformer encoder block: attention + FFN + residual + LayerNorm."""
 
     def __init__(self, embed_dim, num_heads, ff_dim, dropout=0.1):
         super().__init__()
@@ -98,18 +59,10 @@ class TransformerBlock(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        """
-        Args:
-            x (Tensor): Shape (batch, seq_len, embed_dim).
-
-        Returns:
-            Tensor: Same shape as x.
-        """
-        # --- Self-attention sub-layer ---
+        """x: (batch, seq_len, embed_dim) -> same shape."""
         attn_output, _ = self.attention(x, x, x)
         x = self.norm1(x + self.dropout(attn_output))
 
-        # --- Feed-forward sub-layer ---
         ff_output = self.feed_forward(x)
         x = self.norm2(x + self.dropout(ff_output))
 
@@ -129,13 +82,11 @@ if __name__ == "__main__":
     out = attn(x)
     assert out.shape == x.shape, f"Shape mismatch: {out.shape}"
     print(f"  Input  shape: {x.shape}")
-    print(f"  Output shape: {out.shape}  ✓")
+    print(f"  Output shape: {out.shape}")
 
     print("\nTesting TransformerBlock...")
     block = TransformerBlock(embed_dim=EMBED_DIM, num_heads=4, ff_dim=128, dropout=0.1)
     out = block(x)
     assert out.shape == x.shape, f"Shape mismatch: {out.shape}"
     print(f"  Input  shape: {x.shape}")
-    print(f"  Output shape: {out.shape}  ✓")
-
-    print("\nAll tests passed.")
+    print(f"  Output shape: {out.shape}")

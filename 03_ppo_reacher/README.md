@@ -29,17 +29,6 @@ The implementation follows the original PPO paper (Schulman et al., 2017) and us
 
 ---
 
-## Key Concepts
-
-| Concept | Description |
-|---|---|
-| **Continuous Action Space** | Gaussian policy with input-dependent mean and learned standard deviation |
-| **PPO-Clip** | Clipped surrogate objective constrains the policy update ratio to `[1-eps, 1+eps]` |
-| **GAE** | Generalized Advantage Estimation computes per-step advantages with a bias–variance trade-off controlled by lambda |
-| **Actor-Critic** | Separate policy (actor) and value (critic) networks updated jointly |
-
----
-
 ## Results
 
 ### Training Reward Curve

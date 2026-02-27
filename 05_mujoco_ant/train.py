@@ -1,12 +1,7 @@
-"""Training loop for PPO on MuJoCo Ant-v5.
+"""PPO training loop for Ant-v5.
 
-Supports observation/reward normalization, linear learning-rate annealing,
-optional domain randomization, and checkpoint save/resume.
-
-Usage:
-    python train.py                                        # fresh start
-    python train.py --resume checkpoints/ant_ppo_final.pt  # resume
-    python train.py --timesteps 5000000                    # custom length
+Supports obs/reward normalization, LR annealing, domain randomization,
+and checkpoint save/resume.
 """
 
 import argparse
@@ -22,22 +17,14 @@ from obs_normalizer import ObsNormalizer
 from ppo_agent import PPOAgent
 from reward_normalizer import RewardNormalizer
 
-# ── Default hyperparameters ───────────────────────────────────────────
 INITIAL_LR = 3e-4
 BUFFER_SIZE = 2048
 LOG_INTERVAL = 5
 SAVE_INTERVAL = 50
 
 
-def _build_checkpoint(
-    agent: PPOAgent,
-    obs_normalizer: ObsNormalizer,
-    reward_normalizer: RewardNormalizer,
-    global_step: int,
-    update: int,
-    episode_count: int,
-) -> dict:
-    """Assemble a checkpoint dictionary for ``torch.save``."""
+def _build_checkpoint(agent, obs_normalizer, reward_normalizer,
+                      global_step, update, episode_count):
     return {
         "network": agent.network.state_dict(),
         "optimizer": agent.optimizer.state_dict(),
@@ -66,17 +53,6 @@ def train(
     use_domain_randomization: bool = False,
     resume_from: str | None = None,
 ) -> None:
-    """Run the PPO training loop on Ant-v5.
-
-    Args:
-        total_timesteps:           Total environment steps to train for.
-        buffer_size:               Rollout length before each PPO update.
-        log_interval:              Print metrics every N updates.
-        save_interval:             Save a checkpoint every N updates.
-        save_dir:                  Directory for checkpoint files.
-        use_domain_randomization:  Randomize physics each episode.
-        resume_from:               Path to a checkpoint to resume from.
-    """
     env = gym.make("Ant-v5")
     obs_dim = env.observation_space.shape[0]
     act_dim = env.action_space.shape[0]
@@ -137,7 +113,6 @@ def train(
 
     for update in range(start_update + 1, num_updates + 1):
 
-        # ── Collect rollout ───────────────────────────────────
         for _step in range(buffer_size):
             obs_normalizer.update(obs)
             norm_obs = obs_normalizer.normalize(obs)
@@ -167,7 +142,7 @@ def train(
 
             obs = next_obs
 
-        # ── Bootstrap value for the last state ────────────────
+        # Bootstrap last state
         with torch.no_grad():
             norm_obs = obs_normalizer.normalize(obs)
             obs_tensor = torch.tensor(norm_obs, dtype=torch.float32)
@@ -175,7 +150,7 @@ def train(
 
         agent.buffer.compute_advantages(last_value, agent.gamma, agent.lam)
 
-        # ── Linear LR annealing to zero ──────────────────────
+        # Linear LR annealing to zero
         progress = update / num_updates
         new_lr = INITIAL_LR * (1.0 - progress)
         for param_group in agent.optimizer.param_groups:
@@ -183,7 +158,6 @@ def train(
 
         agent.update()
 
-        # ── Logging ───────────────────────────────────────────
         if update % log_interval == 0 and len(recent_rewards) > 0:
             elapsed = time.time() - start_time
             mean_reward = np.mean(recent_rewards[-20:])
@@ -201,7 +175,6 @@ def train(
 
             recent_rewards = recent_rewards[-20:]
 
-        # ── Periodic checkpoint ───────────────────────────────
         if update % save_interval == 0:
             path = os.path.join(save_dir, f"ant_ppo_{global_step}.pt")
             torch.save(
@@ -211,11 +184,10 @@ def train(
                 ),
                 path,
             )
-            print(f"   ->  Model saved to {path}")
+            print(f"   ->  Checkpoint saved: {path}")
 
     env.close()
 
-    # ── Final checkpoint ──────────────────────────────────────
     final_path = os.path.join(save_dir, "ant_ppo_final.pt")
     torch.save(
         _build_checkpoint(
@@ -224,31 +196,14 @@ def train(
         ),
         final_path,
     )
-    print(f"Training complete. Final model saved to {final_path}")
+    print(f"Training complete. Final model: {final_path}")
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Train a PPO agent on MuJoCo Ant-v5."
-    )
-    parser.add_argument(
-        "--timesteps",
-        type=int,
-        default=1_000_000,
-        help="Total environment steps (default: 1_000_000)",
-    )
-    parser.add_argument(
-        "--resume",
-        type=str,
-        default=None,
-        help="Path to checkpoint file to resume training from",
-    )
-    parser.add_argument(
-        "--domain-randomization",
-        action="store_true",
-        help="Enable domain randomization (gravity, friction, mass)",
-    )
+    parser = argparse.ArgumentParser(description="Train PPO on Ant-v5.")
+    parser.add_argument("--timesteps", type=int, default=1_000_000)
+    parser.add_argument("--resume", type=str, default=None)
+    parser.add_argument("--domain-randomization", action="store_true")
     return parser.parse_args()
 
 

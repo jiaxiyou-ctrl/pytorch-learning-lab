@@ -1,4 +1,4 @@
-"""Step 4: Retrieval — Find relevant chunks via similarity search."""
+"""Step 4: similarity search retrieval from ChromaDB."""
 
 import os
 import warnings
@@ -18,7 +18,7 @@ DB_DIR = os.path.join(BASE_DIR, "..", "chroma_db")
 
 
 def get_retriever(persist_directory=DB_DIR):
-    """Load the Chroma vector store and return a similarity retriever."""
+    """Load Chroma store and return a similarity retriever (top-3)."""
     embedding_model = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
@@ -35,14 +35,13 @@ def get_retriever(persist_directory=DB_DIR):
 
 
 def retrieve(query, retriever):
-    """Run a similarity search and print the top results."""
+    """Run similarity search and print results."""
     results = retriever.invoke(query)
 
-    print(f"❓ Question: {query}")
-    print(f"📄 Found {len(results)} relevant document(s)\n")
+    print(f"Q: {query}")
+    print(f"Found {len(results)} relevant chunk(s)\n")
     for i, doc in enumerate(results):
-        print(f"🔍 Result {i+1}:")
-        print(f"   {doc.page_content[:100]}")
+        print(f"  Result {i+1}: {doc.page_content[:100]}")
 
     return results
 

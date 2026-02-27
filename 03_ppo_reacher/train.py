@@ -1,11 +1,4 @@
-"""Main training script for the PPO Reacher agent.
-
-Trains a PPO agent on the MuJoCo Reacher-v5 environment and saves the
-trained model checkpoint and reward curve to the results directory.
-
-Example:
-    python train.py --num_iterations 200 --steps_per_iter 2048
-"""
+"""Train a PPO agent on MuJoCo Reacher-v5."""
 
 import argparse
 import os
@@ -24,54 +17,28 @@ from ppo import collect_experience, compute_advantages, ppo_update
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line hyperparameters."""
     parser = argparse.ArgumentParser(
         description="Train a PPO agent on Reacher-v5."
     )
-    parser.add_argument("--num_iterations", type=int, default=200,
-                        help="Number of training iterations.")
-    parser.add_argument("--steps_per_iter", type=int, default=2048,
-                        help="Environment steps collected per iteration.")
-    parser.add_argument("--policy_lr", type=float, default=3e-4,
-                        help="Learning rate for the policy network.")
-    parser.add_argument("--value_lr", type=float, default=3e-4,
-                        help="Learning rate for the value network.")
-    parser.add_argument("--gamma", type=float, default=0.99,
-                        help="Discount factor.")
-    parser.add_argument("--lam", type=float, default=0.95,
-                        help="GAE lambda.")
-    parser.add_argument("--clip_epsilon", type=float, default=0.2,
-                        help="PPO-Clip epsilon.")
-    parser.add_argument("--update_epochs", type=int, default=4,
-                        help="Number of update epochs per iteration.")
-    parser.add_argument("--mini_batch_size", type=int, default=64,
-                        help="Mini-batch size for PPO updates.")
+    parser.add_argument("--num_iterations", type=int, default=200)
+    parser.add_argument("--steps_per_iter", type=int, default=2048)
+    parser.add_argument("--policy_lr", type=float, default=3e-4)
+    parser.add_argument("--value_lr", type=float, default=3e-4)
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--lam", type=float, default=0.95)
+    parser.add_argument("--clip_epsilon", type=float, default=0.2)
+    parser.add_argument("--update_epochs", type=int, default=4)
+    parser.add_argument("--mini_batch_size", type=int, default=64)
     parser.add_argument("--save_dir", type=str,
-                        default=os.path.join(os.path.dirname(__file__), "results"),
-                        help="Directory for saving model and plots.")
+                        default=os.path.join(os.path.dirname(__file__), "results"))
     return parser.parse_args()
 
 
-def save_reward_curve(
-    avg_reward_history: list,
-    total_reward_history: list,
-    save_path: str,
-) -> None:
-    """Plot and save the training reward curve.
-
-    Produces a two-panel figure:
-    - Top panel: per-step average reward with 10-iteration smoothed trend.
-    - Bottom panel: total episode reward per iteration (sum over steps_per_iter steps).
-
-    Args:
-        avg_reward_history:   Average per-step reward per iteration.
-        total_reward_history: Total reward summed over all steps per iteration.
-        save_path:            File path for the output PNG.
-    """
+def save_reward_curve(avg_reward_history, total_reward_history, save_path):
+    """Two-panel reward curve: per-step avg + total per iteration."""
     window = 10
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-    # --- Top panel: per-step average reward ---
     ax1.plot(avg_reward_history, alpha=0.4, color="steelblue", label="Raw Reward")
     if len(avg_reward_history) >= window:
         smoothed = np.convolve(
@@ -89,7 +56,6 @@ def save_reward_curve(
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
-    # --- Bottom panel: total reward per iteration ---
     ax2.plot(total_reward_history, alpha=0.4, color="darkorange", label="Total Reward")
     if len(total_reward_history) >= window:
         smoothed_total = np.convolve(
@@ -113,7 +79,6 @@ def save_reward_curve(
 
 
 def main() -> None:
-    """Run the full PPO training loop."""
     args = parse_args()
     os.makedirs(args.save_dir, exist_ok=True)
 
@@ -127,8 +92,7 @@ def main() -> None:
     policy_optimizer = optim.Adam(policy.parameters(), lr=args.policy_lr)
     value_optimizer = optim.Adam(value_net.parameters(), lr=args.value_lr)
 
-    # Linearly anneal both learning rates to 10 % of their starting value
-    # by the final iteration, giving aggressive early updates and fine-tuning later.
+    # Anneal LR to 10% by end of training
     policy_scheduler = LinearLR(
         policy_optimizer, start_factor=1.0, end_factor=0.1,
         total_iters=args.num_iterations,
@@ -154,12 +118,10 @@ def main() -> None:
     total_reward_history = []
 
     for iteration in range(args.num_iterations):
-        # --- Rollout ---
         experience = collect_experience(
             env, policy, value_net, args.steps_per_iter
         )
 
-        # --- GAE ---
         advantages, returns = compute_advantages(
             experience["rewards"],
             experience["values"],
@@ -171,7 +133,6 @@ def main() -> None:
         experience["advantages"] = advantages
         experience["returns"] = returns
 
-        # --- PPO update ---
         avg_p_loss, avg_v_loss = ppo_update(
             policy,
             value_net,
@@ -205,7 +166,6 @@ def main() -> None:
 
     env.close()
 
-    # --- Save model ---
     model_path = os.path.join(args.save_dir, "trained_model.pth")
     torch.save(
         {
@@ -217,12 +177,10 @@ def main() -> None:
         model_path,
     )
 
-    # --- Save reward curve ---
     curve_path = os.path.join(args.save_dir, "training_reward_curve.png")
     save_reward_curve(avg_reward_history, total_reward_history, curve_path)
 
-    print()
-    print(f"Training complete. Model saved to {model_path}")
+    print(f"\nModel saved to {model_path}")
     print(f"Reward curve saved to {curve_path}")
 
 

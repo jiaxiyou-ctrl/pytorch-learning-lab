@@ -1,8 +1,4 @@
-"""PPO agent with clipped surrogate objective for continuous control.
-
-Wraps the ActorCritic network, optimizer, and rollout buffer into a
-single agent interface with ``select_action`` and ``update`` methods.
-"""
+"""PPO agent wrapping ActorCritic network, optimizer, and rollout buffer."""
 
 from typing import Tuple
 
@@ -15,22 +11,7 @@ from ppo_buffer import PPOBuffer
 
 
 class PPOAgent:
-    """Proximal Policy Optimization agent.
-
-    Args:
-        obs_dim:       Observation dimensionality.
-        act_dim:       Action dimensionality.
-        lr:            Adam learning rate.
-        gamma:         Discount factor.
-        lam:           GAE lambda.
-        clip_range:    PPO clipping epsilon.
-        entropy_coef:  Entropy bonus coefficient.
-        value_coef:    Value-loss coefficient.
-        max_grad_norm: Maximum gradient norm for clipping.
-        update_epochs: Number of SGD passes per PPO update.
-        batch_size:    Mini-batch size for SGD.
-        buffer_size:   Number of environment steps per rollout.
-    """
+    """PPO-Clip agent for continuous control."""
 
     def __init__(
         self,
@@ -64,14 +45,7 @@ class PPOAgent:
     def select_action(
         self, obs: np.ndarray
     ) -> Tuple[np.ndarray, float, float]:
-        """Choose an action given an observation (no gradient).
-
-        Args:
-            obs: Normalized observation vector.
-
-        Returns:
-            Tuple of ``(action, log_prob, value)``.
-        """
+        """Choose action given normalized obs (no grad). Returns (action, log_prob, value)."""
         with torch.no_grad():
             obs_tensor = torch.tensor(obs, dtype=torch.float32)
             action, log_prob, _, value = self.network.get_action_and_value(
@@ -80,7 +54,7 @@ class PPOAgent:
             return action.numpy(), log_prob.item(), value.item()
 
     def update(self) -> None:
-        """Run multiple epochs of PPO-Clip updates on the current buffer."""
+        """Run PPO-Clip updates on the current buffer, then reset it."""
         for _epoch in range(self.update_epochs):
             for batch in self.buffer.get_batches(self.batch_size):
                 obs = batch["observations"]

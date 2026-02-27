@@ -1,21 +1,12 @@
-"""
-train.py
---------
-Training script for the Q-Learning maze solver.
+"""Training script for the Q-learning maze solver.
 
-Runs the agent for a configurable number of episodes, then:
-  1. Saves a reward-curve plot  → results/training_reward_curve.png
-  2. Saves an animated GIF of the trained agent navigating the maze
-                               → results/maze_agent.gif
-
-Usage:
-    python train.py
+Saves reward curve and animated GIF to results/.
 """
 
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")          # non-interactive backend; safe on all platforms
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.animation as animation
@@ -44,16 +35,16 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # ---------------------------------------------------------------------------
 
 def draw_maze_frame(ax, grid, step_num, episode_reward):
-    """Render one maze frame onto *ax* using a colour-coded grid."""
+    """Render one maze frame onto *ax*."""
     ax.clear()
 
-    # Colour map: 0=floor, 1=wall, 2=agent, 3=goal
+    # 0=floor, 1=wall, 2=agent, 3=goal
     color_grid = np.zeros((*grid.shape, 3))
     color_map = {
-        0: [0.95, 0.95, 0.95],   # floor  – light grey
-        1: [0.20, 0.20, 0.20],   # wall   – dark grey
-        2: [0.20, 0.60, 0.90],   # agent  – blue
-        3: [1.00, 0.80, 0.10],   # goal   – yellow
+        0: [0.95, 0.95, 0.95],
+        1: [0.20, 0.20, 0.20],
+        2: [0.20, 0.60, 0.90],
+        3: [1.00, 0.80, 0.10],
     }
     for val, color in color_map.items():
         color_grid[grid == val] = color
@@ -94,7 +85,7 @@ def draw_maze_frame(ax, grid, step_num, episode_reward):
 # ---------------------------------------------------------------------------
 
 def train():
-    """Train the Q-Learning agent and return per-episode rewards."""
+    """Train the Q-learning agent, return per-episode rewards."""
     env = SimpleMaze()
     agent = QLearningAgent(
         state_size=env.size * env.size,
@@ -138,7 +129,7 @@ def train():
 
 
 # ---------------------------------------------------------------------------
-# Visualisation 1: reward curve
+# Reward curve plot
 # ---------------------------------------------------------------------------
 
 def plot_reward_curve(episode_rewards, save_path):
@@ -149,7 +140,6 @@ def plot_reward_curve(episode_rewards, save_path):
     ax.plot(episodes, episode_rewards, alpha=0.35, color="steelblue",
             linewidth=0.8, label="Episode reward")
 
-    # Smoothed moving average (window = 50)
     window = 50
     smoothed = np.convolve(episode_rewards,
                            np.ones(window) / window, mode="valid")
@@ -166,22 +156,17 @@ def plot_reward_curve(episode_rewards, save_path):
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close(fig)
-    print(f"Reward curve saved → {save_path}")
+    print(f"Reward curve saved -> {save_path}")
 
 
 # ---------------------------------------------------------------------------
-# Visualisation 2: animated GIF of the trained agent
+# Animated GIF of trained agent
 # ---------------------------------------------------------------------------
 
 def record_episode(agent, env, max_steps=MAX_STEPS):
-    """
-    Run one greedy episode (epsilon=0) and collect frame data.
-
-    Returns:
-        list[tuple]: Each element is (grid_snapshot, cumulative_reward).
-    """
+    """Run one greedy episode (eps=0), return list of (grid, cumulative_reward)."""
     original_epsilon = agent.epsilon
-    agent.epsilon = 0.0   # pure exploitation
+    agent.epsilon = 0.0
 
     state = env.reset()
     frames = [(env.render_to_grid().copy(), 0)]
@@ -200,7 +185,7 @@ def record_episode(agent, env, max_steps=MAX_STEPS):
 
 
 def save_agent_gif(agent, env, save_path):
-    """Animate a single greedy episode and save as an animated GIF."""
+    """Animate a greedy episode and save as GIF."""
     frames = record_episode(agent, env)
 
     fig, ax = plt.subplots(figsize=(4, 4))
@@ -214,13 +199,13 @@ def save_agent_gif(agent, env, save_path):
         fig,
         update,
         frames=len(frames),
-        interval=400,     # ms per frame
+        interval=400,
         repeat=False,
     )
 
     ani.save(save_path, writer="pillow", fps=2.5)
     plt.close(fig)
-    print(f"Agent GIF saved       → {save_path}")
+    print(f"Agent GIF saved -> {save_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -242,5 +227,3 @@ if __name__ == "__main__":
 
     demo_env = SimpleMaze()
     save_agent_gif(trained_agent, demo_env, gif_path)
-
-    print("\nDone! Check the results/ folder for output files.")

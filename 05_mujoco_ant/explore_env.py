@@ -1,17 +1,9 @@
-"""Quick exploration of the MuJoCo Ant-v5 environment.
-
-Prints environment metadata and runs a few episodes with random actions
-to verify the setup before training.
-
-Usage:
-    python explore_env.py
-"""
+"""Quick look at Ant-v5: print env info, run random episodes."""
 
 import gymnasium as gym
 
 
 def explore() -> None:
-    """Print environment info and run random-action episodes."""
     env = gym.make("Ant-v5", render_mode="human")
 
     print("=" * 60)
@@ -42,7 +34,6 @@ def explore() -> None:
         )
 
     env.close()
-    print("Environment verification complete. Ready to train!")
 
 
 if __name__ == "__main__":

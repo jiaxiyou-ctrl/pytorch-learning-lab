@@ -1,13 +1,4 @@
-"""Environment exploration script for MuJoCo Reacher-v5.
-
-Prints observation and action space details, labels each observation
-index, and runs a series of controlled experiments to characterise the
-environment dynamics and reward structure.
-
-Example:
-    python explore_env.py           # headless (fast)
-    python explore_env.py --render  # open a render window
-"""
+"""Explore Reacher-v5: print obs/action spaces and run fixed-action experiments."""
 
 import argparse
 
@@ -15,7 +6,6 @@ import numpy as np
 import gymnasium as gym
 
 
-# Human-readable labels for each index of the Reacher-v5 observation vector.
 OBS_LABELS = [
     "cos(joint0_angle)",
     "cos(joint1_angle)",
@@ -32,24 +22,14 @@ OBS_LABELS = [
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Explore the Reacher-v5 observation and action spaces."
     )
-    parser.add_argument(
-        "--render",
-        action="store_true",
-        help="Open a render window during experiments.",
-    )
+    parser.add_argument("--render", action="store_true")
     return parser.parse_args()
 
 
 def print_observation_space(env) -> None:
-    """Print observation space metadata and per-index labels.
-
-    Args:
-        env: A Gymnasium environment instance.
-    """
     obs_space = env.observation_space
     print("=" * 60)
     print("Observation Space")
@@ -69,11 +49,6 @@ def print_observation_space(env) -> None:
 
 
 def print_action_space(env) -> None:
-    """Print action space metadata.
-
-    Args:
-        env: A Gymnasium environment instance.
-    """
     act_space = env.action_space
     print("=" * 60)
     print("Action Space")
@@ -86,14 +61,7 @@ def print_action_space(env) -> None:
 
 
 def run_experiments(env) -> None:
-    """Run four fixed-action experiments and report outcomes.
-
-    Each experiment applies a constant action for 100 steps, starting
-    from a freshly reset environment.
-
-    Args:
-        env: A Gymnasium environment instance.
-    """
+    """Run fixed-action experiments to characterize dynamics."""
     experiments = [
         {"name": "No movement (zero torque)",         "action": [0.0,  0.0]},
         {"name": "Shoulder only (clockwise)",          "action": [1.0,  0.0]},
@@ -129,18 +97,11 @@ def run_experiments(env) -> None:
 
 
 def compare_random_vs_still(env) -> None:
-    """Compare cumulative rewards for random policy vs. zero-action policy.
-
-    Both baselines run for 50 steps from the same starting state.
-
-    Args:
-        env: A Gymnasium environment instance.
-    """
+    """Random policy vs zero-action baseline, 50 steps each."""
     print("=" * 60)
     print("Random Policy vs. No-Action Baseline (50 steps each)")
     print("=" * 60)
 
-    # Random policy
     observation, _ = env.reset()
     random_reward = 0.0
     for _ in range(50):
@@ -150,7 +111,6 @@ def compare_random_vs_still(env) -> None:
         if terminated or truncated:
             observation, _ = env.reset()
 
-    # Zero-action policy
     observation, _ = env.reset()
     still_reward = 0.0
     zero_action = np.zeros(env.action_space.shape, dtype=np.float32)
@@ -166,27 +126,19 @@ def compare_random_vs_still(env) -> None:
 
 
 def print_reward_explanation() -> None:
-    """Print a concise explanation of the Reacher-v5 reward function."""
     print("=" * 60)
     print("Reward Function")
     print("=" * 60)
     print("""
   reward = - dist(fingertip, target) - ctrl_cost
 
-  dist(fingertip, target) : Euclidean distance between the fingertip
-                             and the target position. The closer the
-                             fingertip, the higher (less negative) the reward.
-
-  ctrl_cost               : Penalty proportional to the squared norm of
-                             the applied torques, discouraging large actions.
-
-  Optimal behaviour       : Move the fingertip to the target and apply
-                             minimal torque to stay there.
+  dist: Euclidean distance between fingertip and target.
+  ctrl_cost: penalty proportional to squared torque norm.
+  Optimal: reach target with minimal torque.
 """)
 
 
 def main() -> None:
-    """Run all environment exploration sections."""
     args = parse_args()
     render_mode = "human" if args.render else None
 
@@ -199,7 +151,6 @@ def main() -> None:
     print_reward_explanation()
 
     env.close()
-    print("Exploration complete.")
 
 
 if __name__ == "__main__":

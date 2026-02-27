@@ -1,27 +1,12 @@
-"""
-sentiment_analysis.py
----------------------
-Sentiment analysis using a pre-trained Hugging Face pipeline.
-
-The pipeline loads 'distilbert-base-uncased-finetuned-sst-2-english' by default,
-classifying text as POSITIVE or NEGATIVE with a confidence score.
-
-Usage:
-    python sentiment_analysis.py
-"""
+"""Sentiment analysis using a pre-trained HuggingFace pipeline (DistilBERT)."""
 
 from transformers import pipeline
 
 
 def run_sentiment_analysis():
-    """
-    Load a pre-trained sentiment-analysis pipeline and classify example texts.
-
-    Prints the predicted label and confidence score for each input.
-    """
+    """Classify example texts as POSITIVE/NEGATIVE with confidence scores."""
     print("Loading sentiment-analysis model...")
     sentiment_analyzer = pipeline("sentiment-analysis")
-    print("Model loaded successfully.\n")
 
     texts = [
         "I love this movie, it's absolutely fantastic!",
@@ -37,11 +22,8 @@ def run_sentiment_analysis():
 
     for text in texts:
         result = sentiment_analyzer(text)[0]
-        emoji = "😊" if result["label"] == "POSITIVE" else "😞"
-        print(f'\n{emoji} "{text}"')
-        print(f'   → Label: {result["label"]}  |  Confidence: {result["score"]:.4f}')
-
-    print("\nDone.")
+        print(f'\n"{text}"')
+        print(f'   -> {result["label"]}  |  Confidence: {result["score"]:.4f}')
 
 
 if __name__ == "__main__":

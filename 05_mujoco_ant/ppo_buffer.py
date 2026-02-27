@@ -1,8 +1,4 @@
-"""PPO rollout buffer with Generalized Advantage Estimation (GAE).
-
-Stores fixed-length trajectory data collected during environment rollouts
-and computes per-step advantages using GAE-lambda before each PPO update.
-"""
+"""PPO rollout buffer with GAE computation."""
 
 from typing import Dict, Generator
 
@@ -11,13 +7,7 @@ import torch
 
 
 class PPOBuffer:
-    """Fixed-size buffer that stores one rollout and computes GAE.
-
-    Args:
-        buffer_size: Number of environment steps per rollout.
-        obs_dim:     Dimensionality of the observation vector.
-        act_dim:     Dimensionality of the action vector.
-    """
+    """Fixed-size buffer for one rollout. Computes GAE before each update."""
 
     def __init__(self, buffer_size: int, obs_dim: int, act_dim: int) -> None:
         self.observations = np.zeros((buffer_size, obs_dim), dtype=np.float32)
@@ -32,25 +22,8 @@ class PPOBuffer:
         self.buffer_size = buffer_size
         self.ptr = 0
 
-    def store(
-        self,
-        obs: np.ndarray,
-        action: np.ndarray,
-        reward: float,
-        value: float,
-        log_prob: float,
-        done: float,
-    ) -> None:
-        """Append a single transition to the buffer.
-
-        Args:
-            obs:      Observation vector.
-            action:   Action vector.
-            reward:   Scalar reward (normalized).
-            value:    Critic value estimate.
-            log_prob: Log-probability of the action under the current policy.
-            done:     1.0 if episode ended, 0.0 otherwise.
-        """
+    def store(self, obs, action, reward, value, log_prob, done) -> None:
+        """Append one transition."""
         self.observations[self.ptr] = obs
         self.actions[self.ptr] = action
         self.rewards[self.ptr] = reward
@@ -59,19 +32,8 @@ class PPOBuffer:
         self.dones[self.ptr] = done
         self.ptr += 1
 
-    def compute_advantages(
-        self, last_value: float, gamma: float = 0.99, lam: float = 0.95
-    ) -> None:
-        """Compute GAE-lambda advantages and discounted returns.
-
-        Uses the Generalized Advantage Estimation formula from
-        Schulman et al. (2016) to balance bias and variance.
-
-        Args:
-            last_value: Bootstrap value V(s_T) for the final state.
-            gamma:      Discount factor.
-            lam:        GAE lambda for the bias-variance trade-off.
-        """
+    def compute_advantages(self, last_value: float, gamma=0.99, lam=0.95) -> None:
+        """Compute GAE-lambda advantages and returns."""
         last_gae = 0.0
 
         for t in reversed(range(self.buffer_size)):
@@ -96,15 +58,7 @@ class PPOBuffer:
     def get_batches(
         self, batch_size: int
     ) -> Generator[Dict[str, torch.Tensor], None, None]:
-        """Yield shuffled mini-batches of experience as tensors.
-
-        Args:
-            batch_size: Number of transitions per mini-batch.
-
-        Yields:
-            Dictionary with keys ``observations``, ``actions``,
-            ``log_probs``, ``advantages``, and ``returns``.
-        """
+        """Yield shuffled mini-batches as tensors."""
         indices = np.arange(self.buffer_size)
         np.random.shuffle(indices)
 
@@ -121,5 +75,5 @@ class PPOBuffer:
             }
 
     def reset(self) -> None:
-        """Reset the write pointer so the buffer can be refilled."""
+        """Reset write pointer for next rollout."""
         self.ptr = 0

@@ -1,4 +1,4 @@
-"""RAG Assistant — Full pipeline entry point: load, split, embed, retrieve, generate."""
+"""RAG Assistant — full pipeline: load, split, embed, retrieve, generate."""
 
 import warnings
 import os
@@ -32,42 +32,42 @@ def main():
     start_time = time.time()
 
     print("=" * 60)
-    print("  🧟 RAG Assistant: Zombie Survival Guide")
+    print("  RAG Assistant: Zombie Survival Guide")
     print("=" * 60)
 
     # --- Load ---
-    print("\n📥 Loading documents...")
+    print("\nLoading documents...")
     file_path = os.path.join(DATA_DIR, "sample.txt")
     docs = load_document(file_path)
 
     # --- Split ---
-    print("\n✂️  Splitting into chunks...")
+    print("\nSplitting into chunks...")
     chunks = split_documents(docs)
     print("\n   Preview (first 3):")
     for i, chunk in enumerate(chunks[:3]):
         preview = chunk.page_content[:80].replace("\n", "\\n")
-        print(f'   📦 Chunk {i+1} ({len(chunk.page_content)} chars): "{preview}..."')
+        print(f'   Chunk {i+1} ({len(chunk.page_content)} chars): "{preview}..."')
     remaining = len(chunks) - 3
     if remaining > 0:
         print(f"   ... and {remaining} more chunks")
 
     # --- Embed ---
     if os.path.exists(DB_DIR) and os.listdir(DB_DIR):
-        print(f"\n📦 Vector store already exists at {DB_DIR}, skipping embedding.")
+        print(f"\nVector store already exists at {DB_DIR}, skipping embedding.")
     else:
-        print("\n🧠 Creating vector store...")
+        print("\nCreating vector store...")
         create_vector_store(chunks, DB_DIR)
 
     # --- Retriever ---
-    print("\n🔗 Loading retriever...")
+    print("\nLoading retriever...")
     retriever = get_retriever(DB_DIR)
 
     # --- LLM ---
-    print("\n🤖 Loading LLM...")
+    print("\nLoading LLM...")
     llm = create_llm()
 
     # --- QA Chain ---
-    print("\n🔗 Creating QA chain...")
+    print("\nCreating QA chain...")
     qa_chain = create_qa_chain(llm, retriever)
 
     # --- Demo queries ---
@@ -75,17 +75,16 @@ def main():
     for idx, question in enumerate(DEMO_QUESTIONS, 1):
         print(f"\n{'─'*60}")
         print(f"--- Query {idx}/{total} ---")
-        print(f"❓ Q: {question}")
+        print(f"Q: {question}")
         result = qa_chain.invoke({"query": question})
         answer = clean_answer(result["result"])
         sources = len(result.get("source_documents", []))
-        print(f"🤖 A: {answer}")
-        print(f"📚 Sources: {sources} chunks")
+        print(f"A: {answer}")
+        print(f"Sources: {sources} chunks")
 
-    # --- Summary ---
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
-    print(f"✅ Done! Total execution time: {elapsed:.1f}s")
+    print(f"Done. Total execution time: {elapsed:.1f}s")
     print(f"{'='*60}")
 
 

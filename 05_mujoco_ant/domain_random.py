@@ -1,9 +1,4 @@
-"""Domain randomization for sim-to-real transfer.
-
-Randomizes MuJoCo physics parameters (gravity, friction, body mass) at
-the start of each episode so the learned policy generalizes to
-environments with different dynamics.
-"""
+"""Domain randomization for sim-to-real transfer (gravity, friction, mass)."""
 
 from typing import Dict, Tuple
 
@@ -12,19 +7,9 @@ import numpy as np
 
 
 class DomainRandomizer:
-    """Randomizes physics parameters of a MuJoCo environment.
+    """Randomizes MuJoCo physics params at episode start.
 
-    Default values cache is populated lazily on the first call to
-    ``randomize`` so that the randomizer does not depend on the
-    environment at construction time.
-
-    Args:
-        gravity_range:        Uniform range for the z-component of gravity.
-        friction_scale_range: Multiplicative scale range for geom friction.
-        mass_scale_range:     Multiplicative scale range for body masses.
-        randomize_gravity:    Whether to randomize gravity.
-        randomize_friction:   Whether to randomize friction.
-        randomize_mass:       Whether to randomize mass.
+    Default values are cached lazily on first call to randomize().
     """
 
     def __init__(
@@ -48,19 +33,12 @@ class DomainRandomizer:
         self._initialized = False
 
     def _save_default_values(self, model: object) -> None:
-        """Cache the environment's original friction and mass arrays."""
         self._default_friction = model.geom_friction.copy()
         self._default_mass = model.body_mass.copy()
         self._initialized = True
 
     def randomize(self, env: gym.Env) -> None:
-        """Apply random physics perturbations to *env*.
-
-        Should be called after each ``env.reset()``.
-
-        Args:
-            env: A Gymnasium MuJoCo environment instance.
-        """
+        """Apply random physics perturbations. Call after env.reset()."""
         model = env.unwrapped.model
 
         if not self._initialized:
@@ -78,15 +56,7 @@ class DomainRandomizer:
             model.body_mass[:] = self._default_mass * scale
 
     def get_current_params(self, env: gym.Env) -> Dict[str, float]:
-        """Return the environment's current physics parameters.
-
-        Args:
-            env: A Gymnasium MuJoCo environment instance.
-
-        Returns:
-            Dictionary with ``gravity_z``, ``friction_0``, and
-            ``mass_total``.
-        """
+        """Return current gravity_z, friction_0, mass_total."""
         model = env.unwrapped.model
         return {
             "gravity_z": float(model.opt.gravity[2]),

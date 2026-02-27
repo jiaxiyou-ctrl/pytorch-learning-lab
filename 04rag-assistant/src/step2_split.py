@@ -1,4 +1,4 @@
-"""Step 2: Text Splitting — Break documents into smaller, overlapping chunks."""
+"""Step 2: split documents into smaller, overlapping chunks."""
 
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -17,11 +17,10 @@ def split_documents(documents):
     )
     chunks = splitter.split_documents(documents)
 
-    print(f"✅ Documents split successfully!")
-    print(f"📦 {len(documents)} document(s) split into {len(chunks)} chunks")
+    print(f"  {len(documents)} document(s) -> {len(chunks)} chunks")
 
     for i, chunk in enumerate(chunks):
-        print(f"\n📦 Chunk {i+1} ({len(chunk.page_content)} chars):")
+        print(f"\n  Chunk {i+1} ({len(chunk.page_content)} chars):")
         print(f"   {chunk.page_content}")
         print(f"   {'─'*40}")
 

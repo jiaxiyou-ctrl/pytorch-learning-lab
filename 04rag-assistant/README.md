@@ -8,12 +8,12 @@ A Retrieval-Augmented Generation system that answers questions about a zombie su
 
 ```
 Document (.txt)
-    │
-    ▼
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  Load    │───▶│  Split   │───▶│  Embed   │───▶│ Retrieve │───▶│ Generate │
-│ TextLoader│   │ Recursive│   │ MiniLM   │   │ Chroma   │   │ TinyLlama│
-└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+       |
+       v
++------------+    +------------+    +------------+    +------------+    +------------+
+| Load       |--->| Split      |--->| Embed      |--->| Retrieve   |--->| Generate   |
+| TextLoader |    | Recursive  |    | MiniLM     |    | Chroma     |    | TinyLlama  |
++------------+    +------------+    +------------+    +------------+    +------------+
 ```
 
 ---
@@ -71,44 +71,41 @@ python 04rag-assistant/main.py
 
 ```
 ============================================================
-  🧟 RAG Assistant: Zombie Survival Guide
+  RAG Assistant: Zombie Survival Guide
 ============================================================
 
-1. Loading documents...
-  Document loaded successfully!
-  Number of documents: 1
+Loading documents...
+  Document loaded (1 document)
 
-2.  Splitting into chunks...
-  Documents split successfully!
-  1 document(s) split into 6 chunks
+Splitting into chunks...
+  1 document split into 6 chunks
 
-3. Creating vector store...
-  Vector database created successfully!
+Creating vector store...
   Stored 6 vectors
 
-4. Loading LLM...
+Loading LLM...
   Loading model: TinyLlama/TinyLlama-1.1B-Chat-v1.0...
-  Model loaded successfully!
+  Model loaded.
 
-────────────────────────────────────────────────────────────
+------------------------------------------------------------
 --- Query 1/4 ---
-❓ Q: What types of zombies are there?
-🤖 A: Walkers are slow undead with strong bite force. Runners are
+Q: What types of zombies are there?
+A: Walkers are slow undead with strong bite force. Runners are
    recently turned with speed and aggression. Screamers attract
    nearby threats with piercing shrieks. Brutes can smash weak
    barricades in seconds.
-📚 Sources: 3 chunks
+Sources: 3 chunks
 
-────────────────────────────────────────────────────────────
+------------------------------------------------------------
 --- Query 2/4 ---
-❓ Q: What is the best weapon for close combat?
-🤖 A: A sturdy crowbar is excellent — quiet, nearly unbreakable,
+Q: What is the best weapon for close combat?
+A: A sturdy crowbar is excellent — quiet, nearly unbreakable,
    good for prying and striking. Hatchets are compact and effective
    for controlled strikes.
-📚 Sources: 3 chunks
+Sources: 3 chunks
 
 ============================================================
-✅ Done! Total execution time: 42.3s
+Done. Total execution time: 42.3s
 ============================================================
 ```
 

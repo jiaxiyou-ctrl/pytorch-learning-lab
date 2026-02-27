@@ -1,11 +1,4 @@
-"""Smoke test for domain randomization.
-
-Runs a few episodes with randomized physics and prints the sampled
-parameters to verify that randomization is working correctly.
-
-Usage:
-    python test_domain_random.py
-"""
+"""Smoke test for domain randomization."""
 
 import gymnasium as gym
 
@@ -13,7 +6,6 @@ from domain_random import DomainRandomizer
 
 
 def test() -> None:
-    """Run short episodes with randomized physics and print parameters."""
     env = gym.make("Ant-v5")
     randomizer = DomainRandomizer()
 
@@ -46,7 +38,6 @@ def test() -> None:
         )
 
     env.close()
-    print("\nDomain randomization is working!")
 
 
 if __name__ == "__main__":

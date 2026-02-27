@@ -1,18 +1,4 @@
-"""Evaluation script for a trained PPO Reacher agent.
-
-Loads a saved model checkpoint and runs it for a specified number of
-episodes. Optionally renders the environment live or records a GIF.
-
-Examples:
-    # Evaluate silently and print rewards
-    python evaluate.py --model_path results/trained_model.pth
-
-    # Render live (requires a display)
-    python evaluate.py --model_path results/trained_model.pth --render
-
-    # Save evaluation as a GIF
-    python evaluate.py --model_path results/trained_model.pth --save_gif
-"""
+"""Evaluate a trained PPO Reacher agent. Optionally render or save GIF."""
 
 import argparse
 import os
@@ -25,54 +11,25 @@ from networks import PolicyNetwork, ValueNetwork
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Evaluate a trained PPO agent on Reacher-v5."
     )
     parser.add_argument(
-        "--model_path",
-        type=str,
+        "--model_path", type=str,
         default=os.path.join(os.path.dirname(__file__), "results", "trained_model.pth"),
-        help="Path to the saved model checkpoint.",
     )
+    parser.add_argument("--num_episodes", type=int, default=5)
+    parser.add_argument("--render", action="store_true")
+    parser.add_argument("--save_gif", action="store_true")
     parser.add_argument(
-        "--num_episodes",
-        type=int,
-        default=5,
-        help="Number of evaluation episodes.",
-    )
-    parser.add_argument(
-        "--render",
-        action="store_true",
-        help="Render the environment in a window (requires a display).",
-    )
-    parser.add_argument(
-        "--save_gif",
-        action="store_true",
-        help="Record evaluation frames and save as a GIF.",
-    )
-    parser.add_argument(
-        "--gif_path",
-        type=str,
+        "--gif_path", type=str,
         default=os.path.join(os.path.dirname(__file__), "results", "trained_agent.gif"),
-        help="Output path for the saved GIF.",
     )
     return parser.parse_args()
 
 
 def load_model(model_path: str):
-    """Load a saved checkpoint and return the policy network.
-
-    The checkpoint must contain keys: ``policy``, ``obs_dim``, ``act_dim``.
-
-    Args:
-        model_path: Path to the ``.pth`` checkpoint file.
-
-    Returns:
-        policy: Loaded and eval-mode PolicyNetwork.
-        obs_dim: Observation space dimensionality.
-        act_dim: Action space dimensionality.
-    """
+    """Load checkpoint, return (policy, obs_dim, act_dim)."""
     if not os.path.exists(model_path):
         raise FileNotFoundError(
             f"Model checkpoint not found: {model_path}\n"
@@ -90,26 +47,12 @@ def load_model(model_path: str):
 
 
 def run_episode(env, policy: PolicyNetwork) -> tuple:
-    """Run a single episode using the greedy (deterministic) policy.
-
-    The mean of the Gaussian policy is used as the action, suppressing
-    stochastic exploration for cleaner evaluation behaviour.
-
-    Args:
-        env:    Gymnasium environment instance.
-        policy: Trained PolicyNetwork in eval mode.
-
-    Returns:
-        total_reward: Cumulative episode reward.
-        steps:        Number of steps taken.
-        frames:       List of RGB arrays (only populated for rgb_array envs).
-    """
+    """Run one greedy episode (deterministic mean action)."""
     observation, _ = env.reset()
     total_reward = 0.0
     steps = 0
     frames = []
 
-    # Collect frames if the env supports rgb_array rendering.
     render_mode = getattr(env, "render_mode", None)
 
     done = False
@@ -134,19 +77,11 @@ def run_episode(env, policy: PolicyNetwork) -> tuple:
 
 
 def save_gif(frames: list, gif_path: str, fps: int = 30) -> None:
-    """Save a list of RGB numpy arrays as an animated GIF.
-
-    Args:
-        frames:   List of uint8 numpy arrays with shape (H, W, 3).
-        gif_path: Output file path.
-        fps:      Frames per second. Default: 30.
-    """
+    """Save RGB frames as animated GIF."""
     try:
         from PIL import Image
     except ImportError:
-        raise ImportError(
-            "Pillow is required for GIF generation. Install it with: pip install Pillow"
-        )
+        raise ImportError("Pillow required for GIF: pip install Pillow")
 
     os.makedirs(os.path.dirname(os.path.abspath(gif_path)), exist_ok=True)
 
@@ -163,7 +98,6 @@ def save_gif(frames: list, gif_path: str, fps: int = 30) -> None:
 
 
 def main() -> None:
-    """Load the model and run evaluation episodes."""
     args = parse_args()
 
     policy, obs_dim, act_dim = load_model(args.model_path)
@@ -176,7 +110,6 @@ def main() -> None:
     print(f"  Obs / Act  : {obs_dim} / {act_dim}")
     print("=" * 60)
 
-    # Decide render mode.
     if args.render:
         render_mode = "human"
     elif args.save_gif:
@@ -205,8 +138,7 @@ def main() -> None:
         save_gif(all_frames, args.gif_path)
         print(f"  GIF saved to {args.gif_path}")
     elif args.save_gif:
-        print("  Warning: no frames were captured. "
-              "Ensure render_mode='rgb_array' is supported by the environment.")
+        print("  Warning: no frames captured.")
 
 
 if __name__ == "__main__":

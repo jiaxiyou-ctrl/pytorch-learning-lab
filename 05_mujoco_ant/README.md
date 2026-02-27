@@ -15,41 +15,28 @@ Key techniques beyond vanilla PPO include running observation normalization (Wel
 ## Architecture
 
 ```
-                          ┌─────────────────────────┐
-                          │      ActorCritic         │
-                          │                         │
-         obs (105-dim)    │  ┌──── Actor Trunk ────┐ │
-        ─────────────────►│  │ Linear(105, 256)    │ │
-                          │  │ Tanh                │ │──► action mean (8-dim)
-                          │  │ Linear(256, 256)    │ │    + learnable log_std
-                          │  │ Tanh                │ │
-                          │  │ Linear(256, 8)      │ │
-                          │  └─────────────────────┘ │
-                          │                         │
-                          │  ┌──── Critic Trunk ───┐ │
-                          │  │ Linear(105, 256)    │ │
-                          │  │ Tanh                │ │──► state value (scalar)
-                          │  │ Linear(256, 256)    │ │
-                          │  │ Tanh                │ │
-                          │  │ Linear(256, 1)      │ │
-                          │  └─────────────────────┘ │
-                          └─────────────────────────┘
+                       +----------------------------+
+                       |        ActorCritic         |
+                       |                            |
+  obs (105-dim)        |  +--------------------+    |
+  -------------------->|  | Actor Trunk        |    |--> action mean (8-dim)
+                       |  | Linear(105, 256)   |    |    + learnable log_std
+                       |  | Tanh               |    |
+                       |  | Linear(256, 256)   |    |
+                       |  | Tanh               |    |
+                       |  | Linear(256, 8)     |    |
+                       |  +--------------------+    |
+                       |                            |
+                       |  +--------------------+    |
+                       |  | Critic Trunk       |    |--> state value (scalar)
+                       |  | Linear(105, 256)   |    |
+                       |  | Tanh               |    |
+                       |  | Linear(256, 256)   |    |
+                       |  | Tanh               |    |
+                       |  | Linear(256, 1)     |    |
+                       |  +--------------------+    |
+                       +----------------------------+
 ```
-
----
-
-## Key Features
-
-| Feature | Description |
-|---|---|
-| **PPO-Clip** | Clipped surrogate objective constrains the policy update ratio to `[1-ε, 1+ε]` |
-| **Actor-Critic** | Separate actor and critic trunks (two-layer MLP with Tanh activations) |
-| **GAE** | Generalized Advantage Estimation balances bias and variance via λ |
-| **Observation Normalization** | Welford's online algorithm for running mean/variance normalization |
-| **Reward Normalization** | Running standard deviation scaling for consistent gradient magnitudes |
-| **LR Annealing** | Linear decay from 3e-4 to 0 over training for stable convergence |
-| **Domain Randomization** | Randomizes gravity, friction, and mass for sim-to-real transfer |
-| **Checkpoint Resume** | Save and resume training from any checkpoint |
 
 ---
 

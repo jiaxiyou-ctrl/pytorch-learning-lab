@@ -1,9 +1,4 @@
-"""Plot training reward curve from a training log file.
-
-Usage:
-    python plot_training_curve.py
-    python plot_training_curve.py --log training_log.txt --output results/curve.png
-"""
+"""Plot training reward curve from a training log file."""
 
 import argparse
 import os
@@ -15,18 +10,7 @@ import numpy as np
 
 
 def parse_log(log_path: str) -> Tuple[List[int], List[float]]:
-    """Extract ``(step, mean_reward)`` pairs from the training log.
-
-    Expects log lines in the format produced by ``train.py``::
-
-        Update  285/2441 | Step  583,680 | ... | Mean reward   8.5 | ...
-
-    Args:
-        log_path: Path to the training log text file.
-
-    Returns:
-        Tuple of ``(steps, rewards)`` lists.
-    """
+    """Extract (step, mean_reward) pairs from train.py log output."""
     steps: List[int] = []
     rewards: List[float] = []
 
@@ -43,15 +27,7 @@ def parse_log(log_path: str) -> Tuple[List[int], List[float]]:
 
 
 def smooth(values: List[float], weight: float = 0.9) -> List[float]:
-    """Apply exponential moving average smoothing.
-
-    Args:
-        values: Raw reward values.
-        weight: Smoothing factor (0 = no smoothing, 1 = flat line).
-
-    Returns:
-        Smoothed values (same length as input).
-    """
+    """Exponential moving average."""
     smoothed: List[float] = []
     last = values[0]
     for v in values:
@@ -60,18 +36,7 @@ def smooth(values: List[float], weight: float = 0.9) -> List[float]:
     return smoothed
 
 
-def plot(
-    steps: List[int],
-    rewards: List[float],
-    save_path: str = "results/training_reward_curve.png",
-) -> None:
-    """Create and save the training reward curve plot.
-
-    Args:
-        steps:     Global step numbers.
-        rewards:   Corresponding mean episode rewards.
-        save_path: File path to save the figure.
-    """
+def plot(steps, rewards, save_path="results/training_reward_curve.png"):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     ax.plot(
@@ -96,6 +61,7 @@ def plot(
         label=f"Best: {rewards[best_idx]:+.1f} (step {steps[best_idx]:,})",
     )
 
+    # Mark where smoothed reward first crosses zero
     for i in range(1, len(rewards)):
         if smoothed[i - 1] < 0 and smoothed[i] >= 0:
             ax.axvline(
@@ -114,11 +80,7 @@ def plot(
 
     ax.set_xlabel("Training Steps", fontsize=12)
     ax.set_ylabel("Mean Episode Reward", fontsize=12)
-    ax.set_title(
-        "PPO Training on Ant-v5 (MuJoCo)\n"
-        "Obs Normalization + Reward Normalization + LR Annealing",
-        fontsize=14, fontweight="bold",
-    )
+    ax.set_title("PPO Training on Ant-v5", fontsize=14, fontweight="bold")
     ax.legend(loc="upper left", fontsize=10)
     ax.grid(True, alpha=0.3)
 
@@ -130,30 +92,21 @@ def plot(
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
-    print(f"Training curve saved to {save_path}")
+    print(f"Plot saved to {save_path}")
     plt.show()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Plot training reward curve from log file."
-    )
-    parser.add_argument(
-        "--log", default="training_log.txt",
-        help="Path to training log file",
-    )
-    parser.add_argument(
-        "--output", default="results/training_reward_curve.png",
-        help="Path to save the plot",
-    )
+    parser = argparse.ArgumentParser(description="Plot training curve from log.")
+    parser.add_argument("--log", default="training_log.txt")
+    parser.add_argument("--output", default="results/training_reward_curve.png")
     args = parser.parse_args()
 
     steps, rewards = parse_log(args.log)
 
     if len(steps) == 0:
         print(f"No data found in {args.log}")
-        print("Make sure the log contains lines like:")
-        print("  Update  5/2441 | Step  10,240 | ... | Mean reward  -127.6 | ...")
+        print("Expected format: Update .../... | Step ... | ... | Mean reward ... | ...")
     else:
         print(f"Found {len(steps)} data points")
         print(f"  Steps: {steps[0]:,} -> {steps[-1]:,}")

@@ -1,9 +1,4 @@
-"""Record a trained Ant-v5 agent walking and save as MP4 video.
-
-Usage:
-    python record.py
-    python record.py --checkpoint checkpoints/ant_ppo_final.pt --episodes 5
-"""
+"""Record a trained Ant-v5 agent as MP4 video."""
 
 import argparse
 import os
@@ -22,14 +17,6 @@ def record(
     max_steps_per_episode: int = 1000,
     video_folder: str = "videos",
 ) -> None:
-    """Load a trained agent and record evaluation episodes as MP4.
-
-    Args:
-        checkpoint_path:      Path to the saved checkpoint.
-        num_episodes:         Number of episodes to record.
-        max_steps_per_episode: Maximum steps before truncating an episode.
-        video_folder:         Directory where videos are saved.
-    """
     env = gym.make("Ant-v5", render_mode="rgb_array")
     env = gym.wrappers.RecordVideo(
         env,
@@ -52,11 +39,11 @@ def record(
         obs_normalizer.mean = checkpoint["obs_normalizer"]["mean"]
         obs_normalizer.var = checkpoint["obs_normalizer"]["var"]
         obs_normalizer.count = checkpoint["obs_normalizer"]["count"]
-        print(f"  Loaded full checkpoint (step {checkpoint['global_step']:,})")
+        print(f"  Full checkpoint loaded (step {checkpoint['global_step']:,})")
     else:
         agent.network.load_state_dict(checkpoint)
         obs_normalizer = ObsNormalizer(obs_dim)
-        print("  Loaded network weights only (no normalizer stats)")
+        print("  Weights only (no normalizer stats)")
 
     agent.network.eval()
 
@@ -91,24 +78,15 @@ def record(
     print("-" * 50)
     print(f"Mean reward: {np.mean(all_rewards):.1f}")
     print(f"Best reward: {np.max(all_rewards):.1f}")
-    print(f"\nVideos saved in '{video_folder}/' folder")
+    print(f"\nVideos saved in '{video_folder}/'")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Record a trained Ant-v5 agent as MP4 video."
     )
-    parser.add_argument(
-        "--checkpoint",
-        default="checkpoints/ant_ppo_final.pt",
-        help="Path to checkpoint file",
-    )
-    parser.add_argument(
-        "--episodes",
-        type=int,
-        default=3,
-        help="Number of episodes to record",
-    )
+    parser.add_argument("--checkpoint", default="checkpoints/ant_ppo_final.pt")
+    parser.add_argument("--episodes", type=int, default=3)
     args = parser.parse_args()
 
     record(

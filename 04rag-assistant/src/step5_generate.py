@@ -1,4 +1,4 @@
-"""Step 5: Generation — Feed retrieved context to a local LLM for answers."""
+"""Step 5: feed retrieved context to a local LLM for answers."""
 
 import warnings
 import os
@@ -16,7 +16,7 @@ DB_DIR = os.path.join(BASE_DIR, "..", "chroma_db")
 def create_llm():
     """Load TinyLlama as a local text-generation pipeline."""
     model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    print(f"⏳ Loading model: {model_name}...")
+    print(f"  Loading model: {model_name}...")
 
     llm = HuggingFacePipeline.from_model_id(
         model_id=model_name,
@@ -30,12 +30,12 @@ def create_llm():
         },
     )
 
-    print("✅ Model loaded successfully!")
+    print("  Model loaded.")
     return llm
 
 
 def create_qa_chain(llm, retriever):
-    """Build a RetrievalQA chain connecting the retriever to the LLM."""
+    """Build a RetrievalQA chain connecting retriever to LLM."""
     prompt_template = """<|system|>
 You are a zombie apocalypse survival expert. Answer based ONLY on the reference materials. Be concise. If unsure, say "Not in my survival guide."</s>
 <|user|>
@@ -62,7 +62,7 @@ Question: {question}</s>
 
 
 def clean_answer(raw_answer):
-    """Strip template artifacts and deduplicate lines from model output."""
+    """Strip template artifacts and deduplicate lines."""
     answer = raw_answer.strip()
 
     junk_phrases = [
@@ -89,12 +89,12 @@ def clean_answer(raw_answer):
 if __name__ == "__main__":
     from step4_retrieve import get_retriever
 
-    print("📚 Loading retriever...")
+    print("Loading retriever...")
     retriever = get_retriever()
 
     llm = create_llm()
 
-    print("🔗 Creating QA chain...")
+    print("Creating QA chain...")
     qa_chain = create_qa_chain(llm, retriever)
 
     questions = [
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     for q in questions:
         print(f"\n{'='*60}")
-        print(f"❓ {q}")
+        print(f"Q: {q}")
         result = qa_chain.invoke({"query": q})
         answer = clean_answer(result["result"])
-        print(f"🤖 {answer}")
+        print(f"A: {answer}")

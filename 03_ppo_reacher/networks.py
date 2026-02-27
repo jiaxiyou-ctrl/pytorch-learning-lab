@@ -1,24 +1,13 @@
-"""Neural network definitions for the PPO Reacher agent.
-
-Contains the actor (PolicyNetwork) and critic (ValueNetwork) used in
-the actor-critic PPO implementation.
-"""
+"""Actor and critic networks for PPO Reacher."""
 
 import torch
 import torch.nn as nn
 
 
 class PolicyNetwork(nn.Module):
-    """Gaussian policy network (actor) for continuous action spaces.
+    """Gaussian policy: maps observations to Normal(mean, std) over actions.
 
-    Maps observations to a factored Gaussian distribution over actions.
-    The mean is input-dependent; the standard deviation is a learned
-    parameter independent of the input.
-
-    Args:
-        obs_dim: Dimensionality of the observation space.
-        act_dim: Dimensionality of the action space.
-        hidden_dim: Number of units in each hidden layer. Default: 64.
+    Mean is input-dependent; std is a learned parameter (input-independent).
     """
 
     def __init__(self, obs_dim: int, act_dim: int, hidden_dim: int = 64):
@@ -33,42 +22,20 @@ class PolicyNetwork(nn.Module):
 
         self.mean_head = nn.Linear(hidden_dim, act_dim)
 
-        # log_std is a learnable parameter, not input-dependent.
-        # Parameterising in log-space ensures std > 0 after exp().
-        # Initialise at -0.5 so starting std ≈ 0.6 (avoids early over-exploration).
+        # log-space so std > 0 after exp(); init ~0.6 to avoid over-exploration
         self.log_std = nn.Parameter(torch.full((act_dim,), -0.5))
 
     def forward(self, obs: torch.Tensor):
-        """Compute the distribution parameters for the given observations.
-
-        Args:
-            obs: Observation tensor of shape (batch_size, obs_dim).
-
-        Returns:
-            mean: Action means, shape (batch_size, act_dim).
-            std:  Action standard deviations, shape (act_dim,).
-        """
+        """Return (mean, std) of the action distribution."""
         features = self.shared_net(obs)
         mean = self.mean_head(features)
-        # Clamp log_std to prevent std from collapsing or exploding.
-        # Range [-2, 0] corresponds to std in [~0.14, 1.0] — tighter upper bound
-        # stops the policy from staying too stochastic and destabilising training.
+        # clamp to [~0.14, 1.0] — prevents collapse or blow-up
         log_std_clamped = torch.clamp(self.log_std, min=-2.0, max=0.0)
         std = log_std_clamped.exp()
         return mean, std
 
     def get_action(self, obs: torch.Tensor):
-        """Sample an action and compute its log-probability.
-
-        Used during environment interaction (rollout collection).
-
-        Args:
-            obs: Observation tensor of shape (obs_dim,) or (batch_size, obs_dim).
-
-        Returns:
-            action:   Sampled action tensor.
-            log_prob: Sum of log-probabilities across action dimensions.
-        """
+        """Sample action + log_prob for rollout collection."""
         mean, std = self.forward(obs)
         dist = torch.distributions.Normal(mean, std)
         action = dist.sample()
@@ -76,19 +43,7 @@ class PolicyNetwork(nn.Module):
         return action, log_prob
 
     def evaluate_action(self, obs: torch.Tensor, action: torch.Tensor):
-        """Re-evaluate a stored action under the current policy.
-
-        Used during the PPO update step to compute the probability ratio
-        between the new and old policies.
-
-        Args:
-            obs:    Observation tensor of shape (batch_size, obs_dim).
-            action: Action tensor of shape (batch_size, act_dim).
-
-        Returns:
-            log_prob: Log-probability of the action under the current policy.
-            entropy:  Differential entropy of the current distribution.
-        """
+        """Re-evaluate stored action under current policy (for PPO ratio)."""
         mean, std = self.forward(obs)
         dist = torch.distributions.Normal(mean, std)
         log_prob = dist.log_prob(action).sum(dim=-1)
@@ -97,14 +52,7 @@ class PolicyNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
-    """State-value network (critic) for actor-critic methods.
-
-    Estimates V(s) — the expected discounted return from state s.
-
-    Args:
-        obs_dim:    Dimensionality of the observation space.
-        hidden_dim: Number of units in each hidden layer. Default: 64.
-    """
+    """State-value network V(s) for actor-critic."""
 
     def __init__(self, obs_dim: int, hidden_dim: int = 64):
         super().__init__()
@@ -118,20 +66,12 @@ class ValueNetwork(nn.Module):
         )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        """Predict the state value for the given observations.
-
-        Args:
-            obs: Observation tensor of shape (batch_size, obs_dim).
-
-        Returns:
-            Scalar value estimate per observation, shape (batch_size,).
-        """
         return self.net(obs).squeeze(-1)
 
 
 if __name__ == "__main__":
-    OBS_DIM = 11  # Reacher-v5 observation dimension
-    ACT_DIM = 2   # Reacher-v5 action dimension
+    OBS_DIM = 11  # Reacher-v5
+    ACT_DIM = 2
 
     policy = PolicyNetwork(OBS_DIM, ACT_DIM)
     value_net = ValueNetwork(OBS_DIM)
@@ -147,9 +87,8 @@ if __name__ == "__main__":
     print(value_net)
     print(f"Trainable parameters: {value_params:,}")
 
-    # Smoke test with a dummy batch
     dummy_obs = torch.randn(4, OBS_DIM)
     mean, std = policy(dummy_obs)
     values = value_net(dummy_obs)
-    print(f"\nDummy forward pass — mean shape: {mean.shape}, "
-          f"std shape: {std.shape}, values shape: {values.shape}")
+    print(f"\nDummy forward — mean: {mean.shape}, "
+          f"std: {std.shape}, values: {values.shape}")

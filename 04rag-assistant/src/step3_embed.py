@@ -1,4 +1,4 @@
-"""Step 3: Embedding & Storage — Vectorize chunks and persist to ChromaDB."""
+"""Step 3: embed chunks and persist to ChromaDB."""
 
 import os
 import warnings
@@ -18,7 +18,7 @@ DB_DIR = os.path.join(BASE_DIR, "..", "chroma_db")
 
 
 def create_vector_store(chunks, presist_dir=DB_DIR):
-    """Embed document chunks and store them in a Chroma vector database."""
+    """Embed chunks and store in Chroma."""
     embedding_model = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
@@ -29,8 +29,7 @@ def create_vector_store(chunks, presist_dir=DB_DIR):
         persist_directory=presist_dir,
     )
 
-    print(f"✅ Vector database created successfully!")
-    print(f"📊 Stored {vector_store._collection.count()} vectors")
+    print(f"  Stored {vector_store._collection.count()} vectors")
     return vector_store
 
 
@@ -45,6 +44,6 @@ if __name__ == "__main__":
 
     query = "What types of zombies are there?"
     results = vector_store.similarity_search(query, k=2)
-    print(f"\n🔍 Search results for '{query}':")
+    print(f"\nSearch results for '{query}':")
     for i, doc in enumerate(results):
         print(f"   Result {i+1}: {doc.page_content}")

@@ -1,4 +1,4 @@
-"""Step 1: Document Loading — Read raw text files into LangChain Documents."""
+"""Step 1: load raw text files into LangChain Documents."""
 
 import os
 from langchain_community.document_loaders import TextLoader
@@ -13,9 +13,8 @@ def load_document(file_path):
     loader = TextLoader(file_path, encoding="utf-8")
     documents = loader.load()
 
-    print(f"✅ Document loaded successfully!")
-    print(f"📄 Number of documents: {len(documents)}")
-    print(f"📝 Content preview (first 200 chars):\n{documents[0].page_content[:200]}")
+    print(f"  Document loaded ({len(documents)} document(s))")
+    print(f"  Preview: {documents[0].page_content[:200]}")
 
     return documents
 

@@ -1,7 +1,6 @@
 # PyTorch ML Portfolio
 
-From-scratch implementations of core machine learning systems in PyTorch, spanning reinforcement learning, NLP, and retrieval-augmented generation.  
-This repository is engineered as a reproducible portfolio of end-to-end ML builds: algorithm design, training pipelines, evaluation artifacts, and deployment-oriented tooling.
+From-scratch implementations of core ML systems in PyTorch, covering reinforcement learning, NLP, and retrieval-augmented generation.
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org)
@@ -10,39 +9,23 @@ This repository is engineered as a reproducible portfolio of end-to-end ML build
 
 ---
 
-## ✨ Highlights
+## Overview
 
 | Project | Task | Key Result |
 | :-------- | :----- | :----------- |
-| [🐭 Q-Learning Maze](#-1-q-learning-maze-solver) | Tabular RL on 4×4 grid | Optimal policy in ~300 episodes |
-| [🤖 Transformer Basics](#-2-transformer-basics-pytorch--hf-integration) | Self-attention from scratch | Custom encoder block + HuggingFace inference |
-| [🦾 PPO Reacher](#-3-ppo-reacher-agent-mujoco) | 2-DOF robotic arm control | Converged policy via PPO-Clip + GAE |
-| [🧟 RAG Assistant](#-4-local-rag-assistant) | Local retrieval-augmented QA | End-to-end pipeline: ChromaDB + TinyLlama |
-| [🐜 PPO Ant Walker](#-5-ppo-ant-walker-mujoco) | Quadruped locomotion (8-DOF) | **Peak reward +632** · obs/reward norm · LR annealing |
+| [Q-Learning Maze](#1-q-learning-maze-solver) | Tabular RL on 4x4 grid | Optimal policy in ~300 episodes |
+| [Transformer Basics](#2-transformer-basics-pytorch--hf-integration) | Self-attention from scratch | Custom encoder block + HuggingFace inference |
+| [PPO Reacher](#3-ppo-reacher-agent-mujoco) | 2-DOF robotic arm control | Converged policy via PPO-Clip + GAE |
+| [RAG Assistant](#4-local-rag-assistant) | Local retrieval-augmented QA | End-to-end pipeline: ChromaDB + TinyLlama |
+| [PPO Ant Walker](#5-ppo-ant-walker-mujoco) | Quadruped locomotion (8-DOF) | Peak reward +632, obs/reward norm, LR annealing |
 
 ---
 
-## What This Repository Demonstrates
+## Projects
 
-- End-to-end RL engineering with PPO in continuous control environments (`Reacher-v5`, `Ant-v5`)
-- Core transformer components implemented directly in PyTorch (self-attention + encoder block)
-- RAG pipeline design with local inference, embedding retrieval, and grounded generation
-- Training/evaluation outputs tracked as reproducible artifacts (plots, GIFs, logs, checkpoints)
+### [1) Q-Learning Maze Solver](./01_q_learning_maze/)
 
----
-
-## Featured Projects
-
-### 🐭 1) Q-Learning Maze Solver
-**Problem solved:** autonomous path planning in a constrained grid world with sparse reward.  
-**Built:** tabular Q-learning agent with epsilon-greedy exploration and decaying exploration schedule.
-
-**Engineering highlights**
-- Environment simulation in `01_q_learning_maze/maze_env.py`
-- Q-value update loop and policy logic in `01_q_learning_maze/q_learning_agent.py`
-- Reproducible training artifacts: reward curve + trajectory GIF
-
-**Results**
+Tabular Q-learning agent with epsilon-greedy exploration that learns to navigate a 4x4 grid world with walls and sparse reward. Environment sim in `01_q_learning_maze/maze_env.py`, Q-value update and policy in `q_learning_agent.py`.
 
 | Training Curve | Agent Demo |
 | :---: | :---: |
@@ -50,27 +33,15 @@ This repository is engineered as a reproducible portfolio of end-to-end ML build
 
 ---
 
-### 🤖 2) Transformer Basics (PyTorch + HF Integration)
-**Problem solved:** implementing and validating transformer primitives, then applying them to production-grade NLP inference workflows.  
-**Built:** from-scratch `SimpleSelfAttention` and `TransformerBlock`, plus sentiment and generation inference scripts.
+### [2) Transformer Basics (PyTorch + HF Integration)](./02_transformer_basics/)
 
-**Engineering highlights**
-- Scaled dot-product attention in `02_transformer_basics/transformer_block.py`
-- DistilBERT sentiment inference in `02_transformer_basics/sentiment_analysis.py`
-- GPT-2 generation workflow in `02_transformer_basics/text_generation.py`
+From-scratch `SimpleSelfAttention` and `TransformerBlock` in `02_transformer_basics/transformer_block.py`, plus inference scripts using DistilBERT for sentiment (`sentiment_analysis.py`) and GPT-2 for generation (`text_generation.py`).
 
 ---
 
-### 🦾 3) PPO Reacher Agent (MuJoCo)
-**Problem solved:** stable control of a 2-DOF robotic arm in a continuous action space.  
-**Built:** PPO-Clip + GAE training pipeline with actor-critic networks, rollout collection, and evaluation recording.
+### [3) PPO Reacher Agent (MuJoCo)](./03_ppo_reacher/)
 
-**Engineering highlights**
-- PPO update logic in `03_ppo_reacher/ppo.py`
-- Actor/critic models in `03_ppo_reacher/networks.py`
-- Evaluation pipeline with saved demo output in `03_ppo_reacher/evaluate.py`
-
-**Results**
+PPO-Clip + GAE training pipeline for a 2-DOF robotic arm in Reacher-v5. Separate actor/critic networks with Gaussian policy, clipped value loss, and LR annealing. Core PPO logic in `03_ppo_reacher/ppo.py`, networks in `networks.py`.
 
 | Training Curve | Agent Demo |
 | :---: | :---: |
@@ -78,32 +49,15 @@ This repository is engineered as a reproducible portfolio of end-to-end ML build
 
 ---
 
-### 🧟 4) Local RAG Assistant
-**Problem solved:** context-grounded QA without external API dependencies.  
-**Built:** a full RAG stack (document loading, chunking, embedding, retrieval, and local LLM generation) using LangChain + ChromaDB.
+### [4) Local RAG Assistant](./04rag-assistant/)
 
-**Engineering highlights**
-- Modular pipeline across `04rag-assistant/src/step*.py`
-- Fully local inference with TinyLlama-1.1B
-- Grounded responses generated from retrieved top-k chunks
-
-**Measured run**
-- 20 chunks indexed from source document
-- End-to-end execution completed in `~51.8s` (sample run)
+Full RAG stack (load, chunk, embed, retrieve, generate) using LangChain + ChromaDB + TinyLlama, all running locally without API keys. Modular pipeline across `04rag-assistant/src/step*.py`. Indexes ~20 chunks from a source document, end-to-end in ~52s.
 
 ---
 
-### 🐜 5) PPO Ant Walker (MuJoCo)
-**Problem solved:** high-dimensional locomotion control for an 8-actuator quadruped.  
-**Built:** robust PPO training system with normalization, annealing, checkpoint/resume, and domain randomization.
+### [5) PPO Ant Walker (MuJoCo)](./05_mujoco_ant/)
 
-**Engineering highlights**
-- Achieves **peak reward +632** after **5M training steps**
-- Observation normalization (`05_mujoco_ant/obs_normalizer.py`) with Welford statistics
-- Reward normalization (`05_mujoco_ant/reward_normalizer.py`) for stable optimization
-- Sim-to-real robustness hooks via domain randomization (`05_mujoco_ant/domain_random.py`)
-
-**Results**
+PPO for high-dimensional locomotion (8 actuators, 105-dim observations) on Ant-v5. Reaches peak reward +632 after 5M steps. Key additions over vanilla PPO: Welford observation normalization (`obs_normalizer.py`), reward normalization (`reward_normalizer.py`), linear LR annealing, and optional domain randomization (`domain_random.py`) for sim-to-real robustness.
 
 | Training Curve | Agent Demo |
 | :---: | :---: |
@@ -122,14 +76,6 @@ pip install -r requirements.txt
 ```
 
 > `torch` installation can vary by OS/CUDA. Use the selector at [pytorch.org](https://pytorch.org/get-started/locally/).
-
----
-
-## Reproducibility
-
-- Each project directory contains an executable training or inference entry point
-- Output assets are written under project-local `results/` folders
-- RL workflows include model checkpoints and evaluation scripts for reruns
 
 ---
 
