@@ -13,11 +13,11 @@ From-scratch implementations of core ML systems in PyTorch, covering reinforceme
 
 | Project | Task | Key Result |
 | :-------- | :----- | :----------- |
-| [Q-Learning Maze](#1-q-learning-maze-solver) | Tabular RL on 4x4 grid | Optimal policy in ~300 episodes |
-| [Transformer Basics](#2-transformer-basics-pytorch--hf-integration) | Self-attention from scratch | Custom encoder block + HuggingFace inference |
-| [PPO Reacher](#3-ppo-reacher-agent-mujoco) | 2-DOF robotic arm control | Converged policy via PPO-Clip + GAE |
-| [RAG Assistant](#4-local-rag-assistant) | Local retrieval-augmented QA | End-to-end pipeline: ChromaDB + TinyLlama |
-| [PPO Ant Walker](#5-ppo-ant-walker-mujoco) | Quadruped locomotion (8-DOF) | Peak reward +632, obs/reward norm, LR annealing |
+| [Q-Learning Maze](./01_q_learning_maze/) | Tabular RL on 4x4 grid | Optimal policy in ~300 episodes |
+| [Transformer Basics](./02_transformer_basics/) | Self-attention from scratch | Custom encoder block + HuggingFace inference |
+| [PPO Reacher](./03_ppo_reacher/) | 2-DOF robotic arm control | Converged policy via PPO-Clip + GAE |
+| [RAG Assistant](./04rag-assistant/) | Local retrieval-augmented QA | End-to-end pipeline: ChromaDB + TinyLlama |
+| [PPO Ant Walker](./05_mujoco_ant/) | Quadruped locomotion (8-DOF) | Peak reward +632, obs/reward norm, LR annealing |
 
 ---
 
