@@ -14,10 +14,10 @@ CONFIG = {
     "image_size": 84,
     "frame_stack": 3,
 
-    "total_timesteps": 500_000,
+    "total_timesteps": 1_000_000,
     "buffer_size": 2048,
     "batch_size": 64,
-    "update_epochs": 4,
+    "update_epochs": 8,
 
     "lr_encoder": 1e-4,
     "lr_heads": 3e-4,
@@ -25,11 +25,12 @@ CONFIG = {
     "gamma": 0.99,
     "lam": 0.95,
     "clip_range": 0.2,
-    "entropy_coef": 0.01,
+    "entropy_coef": 0.005,
     "value_coef": 0.5,
     "max_grad_norm": 0.5,
 
     "use_augmentation": True,
+    "normalize_reward": True,
 
     "log_interval": 1,
     "save_interval": 50,
@@ -70,7 +71,7 @@ def train() -> None:
 
     cfg = CONFIG
     print("=" * 60)
-    print("🐜 Pixel-based PPO Training for Ant-v5")
+    print("Pixel-based PPO Training for Ant-v5")
     print("=" * 60)
     print(f"  Image:        {cfg['image_size']}×{cfg['image_size']}")
     print(f"  Frame stack:  {cfg['frame_stack']}")
@@ -101,6 +102,7 @@ def train() -> None:
         batch_size=cfg['batch_size'],
         buffer_size=cfg['buffer_size'],
         use_augmentation=cfg['use_augmentation'],
+        normalize_reward=cfg['normalize_reward'],
     )
 
     total_params = sum(p.numel() for p in agent.network.parameters())
@@ -127,7 +129,8 @@ def train() -> None:
             next_obs, reward, terminated, truncated, _info = env.step(action)
             done = terminated or truncated
 
-            agent.buffer.store(obs, action, reward, value, log_prob, float(done))
+            normalized_reward = agent.normalize_rew(reward)
+            agent.buffer.store(obs, action, normalized_reward, value, log_prob, float(done))
             episode_reward += reward
             episode_length += 1
             global_step += 1

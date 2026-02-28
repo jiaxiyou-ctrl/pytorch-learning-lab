@@ -9,6 +9,22 @@ from torch import nn
 from networks import PixelActorCritic
 from pixel_ppo_buffer import PixelPPOBuffer
 
+class RunningMeanStd:
+    def __init__(self) -> None:
+        self.mean = 0.0
+        self.var = 1.0
+        self.count = 1e-4
+
+    def update(self, x: float) -> None:
+       self.count += 1
+       delta = x - self.mean
+       self.mean += delta / self.count
+       delta2 = x - self.mean
+       self.var += (delta * delta2 - self.var) / self.count
+
+    def normalize(self, x: float) -> float:
+        return x / (np.sqrt(self.var) + 1e-8)
+
 class PixelPPOAgent:
 
     def __init__(
@@ -27,6 +43,7 @@ class PixelPPOAgent:
         batch_size: int = 64,
         buffer_size: int = 2048,
         use_augmentation: bool = True,
+        normalize_reward: bool = True,
     ) -> None:
         in_channels = obs_shape[0]
         self.network = PixelActorCritic(in_channels, act_dim)
@@ -61,6 +78,15 @@ class PixelPPOAgent:
         self.update_epochs = update_epochs
         self.batch_size = batch_size
         self.buffer_size = buffer_size
+
+        self.normalize_reward = normalize_reward
+        self.reward_normalizer = RunningMeanStd() if normalize_reward else None
+
+    def normalize_rew(self, reward: float) -> float:
+        if self.reward_normalizer is not None:
+            self.reward_normalizer.update(reward)
+            return self.reward_normalizer.normalize(reward)
+        return reward
 
     def select_action(
         self, obs: np.ndarray
