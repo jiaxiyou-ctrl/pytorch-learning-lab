@@ -1,4 +1,9 @@
-checkpoints/
-videos/
 __pycache__/
 *.pyc
+checkpoints_pixel/
+*.pt
+.DS_Store
+.vscode/
+.idea/
+*.mp4
+*.mov
