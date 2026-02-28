@@ -76,7 +76,8 @@ class PixelPPOAgent:
 
     def update(self) -> None:
         """Run multiple epochs of PPO-Clip updates on the current buffer."""
-
+        if self.use_augmentation:   
+            from augmentation import random_shift
         for _epoch in range(self.update_epochs):
             for batch in self.buffer.get_batches(self.batch_size):
                 obs = batch["observations"]
