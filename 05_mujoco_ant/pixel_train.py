@@ -14,7 +14,7 @@ CONFIG = {
     "image_size": 84,
     "frame_stack": 3,
 
-    "total_timesteps": 1_000_000,
+    "total_timesteps": 5_000_000,
     "buffer_size": 2048,
     "batch_size": 64,
     "update_epochs": 8,
